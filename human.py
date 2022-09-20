@@ -1,8 +1,6 @@
 import pygame
 import display as disp
 
-# hello
-
 
 # This function, naturally, depends on how the game is displayed to the user
 # As long as the xy_to_global function works as intended, this will work fine
