@@ -6,9 +6,14 @@
 
 from time import sleep
 from enum import Enum
+import os
 
 # wongtron config variables
-WAIT_REFRESH_SECONDS = 0.1;
+WAIT_REFRESH_SECONDS = 1;
+NAME = 'wongtron';
+
+# derived variables
+TURN_INDICATOR_FILENAME = (NAME + '.go');
 
 # wongtron state enum
 class State(Enum):
@@ -16,9 +21,11 @@ class State(Enum):
     WAITING_FOR_TURN = 1; # waiting to see wongtron.go
     PLAYING = 2;
 
-def turn_file_present():
-    print('checking for turn file');
-    return False;
+def file_present(filename):
+    cwd = os.getcwd();
+    directory_contents = os.listdir(cwd);
+    file_present = filename in directory_contents;
+    return file_present;
 
 def play():
     pass;
@@ -29,20 +36,20 @@ def main():
         
         # wait for referee to remove the wongtron.go file
         if state == State.WAITING_FOR_OPPONENT_TURN:
-            if not turn_file_present():
+            if not file_present(TURN_INDICATOR_FILENAME):
                 state = State.WAITING_FOR_TURN;
             else:
                 sleep(WAIT_REFRESH_SECONDS);
 
         # wait for wongtron.go file
-        if state == State.WAITING_FOR_TURN:
-            if turn_file_present():
+        elif state == State.WAITING_FOR_TURN:
+            if file_present(TURN_INDICATOR_FILENAME):
                 state = State.PLAYING;
             else:
                 sleep(WAIT_REFRESH_SECONDS);
 
         # play our turn 
-        if state == State.PLAYING:
+        elif state == State.PLAYING:
             play();
             state = State.WAITING_FOR_OPPONENT_TURN;
 
