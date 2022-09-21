@@ -27,13 +27,17 @@ class CellState(Enum):
     WONG = 1;
     OPP = 2;
 
-def init_board():
+def init_classic_board():
     board = [];
-    for row in range(9):
-        board.append([]);
-        for cell in range(9):
-            board[row].append(CellState.EMPTY);
+    for i in range(9):
+        board.append(CellState.EMPTY);
     return board;
+
+def init_boards():
+    boards = [];
+    for board in range(9):
+        boards.append(init_classic_board());
+    return boards;
 
 def file_present(filename):
     cwd = os.getcwd();
@@ -47,7 +51,7 @@ def play():
 def main():
     # init game variables
     state = WongtronState.WAITING_FOR_TURN;
-    board = init_board();
+    board = init_boards();
     while(True):
         
         # wait for referee to remove the wongtron.go file
