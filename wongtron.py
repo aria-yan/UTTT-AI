@@ -11,7 +11,8 @@
 # -------------------------------------- #
 
 PREGAME_MOVES_FILENAME = 'first_four_moves';
-WAIT_REFRESH_SECONDS = 1;
+MOVE_FILENAME = 'move_file';
+WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
 
 # -------------------------------------- #
@@ -107,6 +108,22 @@ def parse_pregame_moves():
 
         # this move begins to wong if wong is first turn and this is the first or third pregame move
         wongs_move = wongtrons_turn_first if (i % 2 == 0) else not wongtrons_turn_first;
+        
+        moves.append(Move(wongs_move, board_num, cell_num));
+
+    return moves;
+
+def parse_move_file():
+    move_lines = [];
+    moves = [];
+
+    with open(MOVE_FILENAME) as f:
+        move_lines = f.readlines();
+    for i, line in enumerate(move_lines):
+        split_move_line = line.split();
+        wongs_move = split_move_line[0] == NAME;
+        board_num = int(split_move_line[1]);
+        cell_num = int(split_move_line[2]);
         
         moves.append(Move(wongs_move, board_num, cell_num));
 
