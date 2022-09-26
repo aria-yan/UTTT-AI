@@ -129,6 +129,11 @@ def parse_move_file():
 
     return moves;
 
+#append given move to move file
+def write_move_file(move):
+    move_file = open("move_file", "a")
+    move_file.write("\n"+str(move.wongtron)+" "+str(move.board_number)+" "+str(move.cell_number))
+
 # -------------------------------------- #
 # play functions
 # -------------------------------------- #
