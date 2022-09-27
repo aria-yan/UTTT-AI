@@ -147,18 +147,37 @@ def parse_move_file():
 def parse_new_moves(moves):
     move_file_moves = parse_move_file();
     number_of_new_moves = len(move_file_moves) + 4 - len(moves);
-    return move_file_moves[-number_of_new_moves:]
+    return move_file_moves[-number_of_new_moves:];
 
 #append given move to move file
 def write_move(move):
-    move_file = open(MOVE_FILENAME, "a")
+    move_file = open(MOVE_FILENAME, "a");
     move_file.write(NAME+" "+str(move.board_number)+" "+str(move.cell_number)+"\n");
 
 # -------------------------------------- #
 # play functions
 # -------------------------------------- #
 
+def check_win_global(boards):
+    return False;
+
+def check_win_local(boards):
+    return False;
+
+def find_valid_moves(boards, last_move):
+    return [];
+    # last_cell_num = last_move.cell_number;
+    # next_board = boards[last_cell_num];
+    # if (solved)
+
 def play(moves):
+    boards = init_boards();
+    for move in moves:
+        apply_move(boards, move);
+
+    last_move = moves[-1];
+    valid_moves = find_valid_moves(boards, last_move);
+    
     return Move(True, 0, 0);
 
 # -------------------------------------- #
