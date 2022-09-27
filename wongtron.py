@@ -21,6 +21,7 @@ NAME = 'wongtron';
 
 from time import sleep
 from enum import Enum
+import argparse
 import os
 
 # -------------------------------------- #
@@ -107,7 +108,7 @@ def parse_pregame_moves():
     # wait till move file and one of the go files exists
     while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
         print('waiting for initial game files')
-        sleep(1);
+        sleep(WAIT_REFRESH_SECONDS);
 
     # the first and third pregame moves belong to whoever gets the first turn.
     wongtrons_turn_first = file_present(TURN_INDICATOR_FILENAME) and (len(parse_move_file()) == 0);
@@ -143,6 +144,11 @@ def parse_move_file():
 
     return moves;
 
+def parse_new_moves(moves):
+    move_file_moves = parse_move_file();
+    number_of_new_moves = len(move_file_moves) + 4 - len(moves);
+    return move_file_moves[-number_of_new_moves:]
+
 #append given move to move file
 def write_move(move):
     move_file = open(MOVE_FILENAME, "a")
@@ -152,8 +158,8 @@ def write_move(move):
 # play functions
 # -------------------------------------- #
 
-def play():
-    pass;
+def play(moves):
+    return Move(True, 0, 0);
 
 # -------------------------------------- #
 # main
@@ -162,9 +168,7 @@ def play():
 def main():
     # init game state
     state = WongtronState.WAITING_FOR_TURN;
-    boards = init_boards();
-    for move in parse_pregame_moves():
-        apply_move(boards, move);
+    moves = parse_pregame_moves();
 
     while(True):
         # wait for referee to remove the wongtron.go file
@@ -183,8 +187,17 @@ def main():
 
         # play our turn 
         elif state == WongtronState.PLAYING:
-            play();
+            moves += parse_new_moves(moves);
+            our_move = play(moves);
+            moves.append(our_move);
+            write_move(our_move);
             state = WongtronState.WAITING_FOR_OPP_TURN;
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--name', type=str)
+    args = parser.parse_args();
+
+    if args.name is not None: NAME = args.name;
+
     main();
