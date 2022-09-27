@@ -91,12 +91,26 @@ def file_present(filename):
     file_present = filename in directory_contents;
     return file_present;
 
+# check if a go file is present
+def either_go_file_present():
+    cwd = os.getcwd();
+    directory_contents = os.listdir(cwd);
+    for name in directory_contents:
+        if name[-3:] == '.go':
+            return True;
+    return False;
+
 def parse_pregame_moves():
     move_lines = [];
     moves = [];
 
+    # wait till move file and one of the go files exists
+    while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
+        print('waiting for initial game files')
+        sleep(1);
+
     # the first and third pregame moves belong to whoever gets the first turn.
-    wongtrons_turn_first = file_present(TURN_INDICATOR_FILENAME);
+    wongtrons_turn_first = file_present(TURN_INDICATOR_FILENAME) and (len(parse_move_file()) == 0);
 
     # parse first four moves
     with open(PREGAME_MOVES_FILENAME) as f:
@@ -132,7 +146,7 @@ def parse_move_file():
 #append given move to move file
 def write_move(move):
     move_file = open(MOVE_FILENAME, "a")
-    move_file.write("\n"+str(move.wongtron)+" "+str(move.board_number)+" "+str(move.cell_number))
+    move_file.write(NAME+" "+str(move.board_number)+" "+str(move.cell_number)+"\n");
 
 # -------------------------------------- #
 # play functions
@@ -146,9 +160,11 @@ def play():
 # -------------------------------------- #
 
 def main():
-    # init game variables
+    # init game state
     state = WongtronState.WAITING_FOR_TURN;
     boards = init_boards();
+    for move in parse_pregame_moves():
+        apply_move(boards, move);
 
     while(True):
         # wait for referee to remove the wongtron.go file
