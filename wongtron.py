@@ -146,10 +146,9 @@ def parse_move_file():
 
 def parse_new_moves(moves):
     move_file_moves = parse_move_file();
-    number_of_new_moves = len(move_file_moves) + 4 - len(moves);
-    return move_file_moves[-number_of_new_moves:];
+    return move_file_moves;
 
-#append given move to move file
+#write given move to move file
 def write_move(move):
     move_file = open(MOVE_FILENAME, "w");
     move_file.write(NAME+" "+str(move.board_number)+" "+str(move.cell_number)+"\n");
