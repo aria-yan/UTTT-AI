@@ -155,6 +155,14 @@ def write_move(move):
     move_file.write(NAME+" "+str(move.board_number)+" "+str(move.cell_number)+"\n");
 
 # -------------------------------------- #
+# printing functions
+# -------------------------------------- #
+
+def print_move(move):
+    player_string = 'wongtron' if move.wongtron else 'opp';
+    print(f'{player_string} {move.board_number} {move.cell_number}');
+
+# -------------------------------------- #
 # play functions
 # -------------------------------------- #
 
@@ -194,9 +202,9 @@ def find_valid_moves(boards, last_move):
     next_board = boards[last_cell_num];
 
     # if board won, find valid moves in all incomplete boards
-    if check_win_local(next_board):
+    if check_win_local(next_board)[0]:
         for board_num, board in enumerate(boards):
-            if not check_win_local(board):
+            if not check_win_local(board)[0]:
                 for cell_num, cell in enumerate(next_board):
                     if cell == CellState.EMPTY:
                         valid_moves.append(Move(True, board_num, cell_num));
@@ -204,7 +212,7 @@ def find_valid_moves(boards, last_move):
     else: 
         for cell_num, cell in enumerate(next_board):
             if cell == CellState.EMPTY:
-                valid_moves.append(Move(True, next_board, cell_num));
+                valid_moves.append(Move(True, last_cell_num, cell_num));
 
     return valid_moves;
 
@@ -224,6 +232,14 @@ def play(moves):
 # -------------------------------------- #
 
 def main():
+    boards = init_boards();
+    m = Move(False, 4, 4);
+    apply_move(boards, m);
+    mvs = find_valid_moves(boards, m);
+    for mv in mvs:
+        print_move(mv);
+    return;
+
     # init game state
     state = WongtronState.WAITING_FOR_TURN;
     moves = parse_pregame_moves();
