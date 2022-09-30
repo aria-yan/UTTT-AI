@@ -205,9 +205,9 @@ def count_boards_in_line(line, boards):
     return wong, opp
 
 def find_valid_moves(boards, last_move):
-    valid_moves = [];
     last_cell_num = last_move.cell_number;
     next_board = boards[last_cell_num];
+    valid_moves = [];
 
     # if board won, find valid moves in all incomplete boards
     if check_win_local(next_board)[0]:
@@ -240,17 +240,6 @@ def play(moves):
 # -------------------------------------- #
 
 def main():
-    boards = init_boards();
-    apply_move(boards, Move(True, 4, 0));
-    apply_move(boards, Move(True, 4, 1));
-    apply_move(boards, Move(True, 4, 2));
-    m = Move(False, 4, 4);
-    apply_move(boards, m);
-    mvs = find_valid_moves(boards, m);
-    for mv in mvs:
-        print_move(mv);
-    return;
-
     # init game state
     state = WongtronState.WAITING_FOR_TURN;
     moves = parse_pregame_moves();
