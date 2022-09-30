@@ -9,10 +9,37 @@ Date:   3 September 2022
 """
 
 import argparse
+import os
+import re
 import sys
 import random
-from external_players import clean, get_competitors
+from os import listdir
+from os.path import isfile, join
+
+import pygame
+
+from external_players import get_competitors
+import display
 from game import Game
+
+def clean():
+    """
+    Delete files maintained by Referee
+    :return: None
+    """
+    print('cleaning...')
+    patterns = [
+        re.compile("move_file"),
+        re.compile("(:?.*).go"),
+        re.compile("end_game"),
+        re.compile("first_four_moves")
+    ]
+    loc = __file__[0:-len('referee.py')]
+    files = [f for f in listdir(loc) if isfile(join(loc, f))]
+    for file in files:
+        for pattern in patterns:
+            if pattern.match(file):
+                os.remove(file)
 
 def main():
     """
@@ -54,4 +81,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except pygame.error:
+        print('________________')
+    clean()

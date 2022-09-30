@@ -62,13 +62,19 @@ This version fixes that issue and updates the output messages to match the ones 
 The previous version of the referee did not filter out invalid initial moves.
 This version fixes that issue so the same move cannot be made twice.
 
-## UPDATE TO V4 09/20/2022
+## UPDATE TO V4 09/28/2022
 
 The previous version of the referee used 'X' and 'O' in the first four moves
 file to indicate player moves; this is confusing because who is 'X' and who is
 'O' is randomly chosen and is
 not communicated to the players directly. To make communication easier for the
 players, the referee now uses the player names in the first_four_moves file.
+
+## UPDATE TO V5 09/30/2022
+
+The clean() function seems to not work well on the previous versions of the referee. 
+This update fixes the clean function and modifies the referee to clean up its files when the game is over.
+
 _________________________________________________________________________
 
 That is all! Have fun playing UTTT and finding fun ways to break my code...

@@ -87,23 +87,7 @@ def external_player(moves, main_board, local_board_num, my_symbol, opponent_symb
 
 
 
-def clean():
-    """
-    Delete files maintained by Referee
-    :return: None
-    """
-    patterns = [
-        re.compile("move_file"),
-        re.compile("(:?.*).go"),
-        re.compile("end_game"),
-        re.compile("first_four_moves")
-    ]
 
-    files = [f for f in listdir("/") if isfile(join("/", f))]
-    for file in files:
-        for pattern in patterns:
-            if pattern.match(file):
-                os.remove(file)
 
 
 
