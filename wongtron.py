@@ -151,7 +151,7 @@ def parse_new_moves(moves):
 
 #append given move to move file
 def write_move(move):
-    move_file = open(MOVE_FILENAME, "a");
+    move_file = open(MOVE_FILENAME, "w");
     move_file.write(NAME+" "+str(move.board_number)+" "+str(move.cell_number)+"\n");
 
 # -------------------------------------- #
