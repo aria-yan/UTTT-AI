@@ -16,6 +16,9 @@ WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
 WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
 
+#dev controls
+PRINT_AND_WAIT_FOR_OK_EACH_TURN = True;
+
 # -------------------------------------- #
 # imports
 # -------------------------------------- #
@@ -25,12 +28,6 @@ from time import sleep
 from enum import Enum
 import argparse
 import os
-
-# -------------------------------------- #
-# derived variables
-# -------------------------------------- #
-
-TURN_INDICATOR_FILENAME = (NAME + '.go');
 
 # -------------------------------------- #
 # enums
@@ -109,17 +106,15 @@ def either_go_file_present():
             return True;
     return False;
 
-def parse_pregame_moves():
-    move_lines = [];
-    moves = [];
-
-    # wait till move file and one of the go files exists
+# wait till move file and one of the go files exists
+def wait_for_initial_game_files():
     while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
         print('waiting for initial game files')
         sleep(WAIT_REFRESH_SECONDS);
 
-    # the first and third pregame moves belong to whoever gets the first turn.
-    wongtrons_turn_first = file_present(TURN_INDICATOR_FILENAME) and (len(parse_move_file()) == 0);
+def parse_pregame_moves():
+    move_lines = [];
+    moves = [];
 
     # parse first four moves
     with open(PREGAME_MOVES_FILENAME) as f:
@@ -128,9 +123,10 @@ def parse_pregame_moves():
         split_move_line = line.split();
         board_num = int(split_move_line[1]);
         cell_num = int(split_move_line[2]);
+        player = split_move_line[0];
 
         # this move begins to wong if wong is first turn and this is the first or third pregame move
-        wongs_move = wongtrons_turn_first if (i % 2 == 0) else not wongtrons_turn_first;
+        wongs_move = player == NAME;
         
         moves.append(Move(wongs_move, board_num, cell_num));
 
@@ -185,7 +181,7 @@ def check_win_global(boards):
     if finished_boards == 24: return [True, "DRAW"]
     else: return [False]
 
-#returns True if board is done and winner if board is done
+#returns True if board is done and winner of finished board
 def check_win_local(board):
     global WINNING_LINES
     filled_cells = 0
@@ -211,6 +207,61 @@ def count_boards_in_line(line, boards):
     opp = boards_line.count([True, "OPP"])
     return wong, opp
 
+#move check functions assume moves are wongtron's moves and are occuring on empty cells
+#move is integer of local move position
+def is_local_win(board, move):
+    global WINNING_LINES
+    for line in WINNING_LINES:
+        if move in line: 
+            wong, opp = count_cells_in_line(board, line)
+            #if 2 cells in the line are wong, 3rd is empty and is the move
+            if wong is 2: return True
+    return False
+
+def is_local_two_in_a_row(board, move):
+    global WINNING_LINES
+    for line in WINNING_LINES:
+        if move in line: 
+            wong, opp = count_cells_in_line(board, line)
+            #1 current wong, no opp in line
+            if wong is 1 and opp is 0: return True
+    return False
+
+def is_local_block(board, move):
+    global WINNING_LINES
+    for line in WINNING_LINES:
+        if move in line: 
+            wong, opp = count_cells_in_line(board, line)
+            #2 current opp, move would block line
+            if opp is 2: return True
+    return False
+
+#move is (global, local) tuple
+def is_global_win(boards, move):
+    global WINNING_LINES
+    #move does not win local board
+    if not is_local_win(boards[move[0]], move[1]): return False
+    for line in WINNING_LINES:
+        if move[0] in line:
+            wong, opp = count_boards_in_line(line, boards)
+            if wong is 2: return True
+    
+def is_global_two_in_a_row(boards, move):
+    global WINNING_LINES
+    if not is_local_win(boards[move[0]], move[1]): return False
+    for line in WINNING_LINES:
+        if move[0] in line:
+            wong, opp = count_boards_in_line(line, boards)
+            if wong is 1 and opp is 0: return True
+
+def is_global_block(boards, move):
+    global WINNING_LINES
+    if not is_local_win(boards[move[0]], move[1]): return False
+    for line in WINNING_LINES:
+        if move[0] in line:
+            wong, opp = count_boards_in_line(line, boards)
+            if opp is 2: return True
+
 def find_valid_moves(boards, last_move):
     last_cell_num = last_move.cell_number;
     next_board = boards[last_cell_num];
@@ -231,7 +282,14 @@ def find_valid_moves(boards, last_move):
 
     return valid_moves;
 
+def eval(boards, move):
+    return 1;
+
+def minmax(boards, last_move):
+    return eval(boards, last_move);
+
 def play(moves):
+    our_move = None;
     #generate board from moves
     boards = init_boards();
     for move in moves:
@@ -239,8 +297,22 @@ def play(moves):
 
     last_move = moves[-1];
     valid_moves = find_valid_moves(boards, last_move);
-    
-    return valid_moves[0];
+
+    best_move = valid_moves[0];
+    best_move_score = eval(boards, best_move);
+
+    for move in valid_moves[1:]:
+        score = minmax(boards, move);
+        if score > best_move_score:
+            best_move_score = score;
+            best_move = move;
+    our_move = best_move;
+
+    if PRINT_AND_WAIT_FOR_OK_EACH_TURN:
+        print('our move: ', end='');
+        print_move(our_move);
+        input('press enter to continue.');
+    return our_move;
 
 # -------------------------------------- #
 # evaluation functions
@@ -316,21 +388,23 @@ def evaluate (boards):
 def main():
     # init game state
     state = WongtronState.WAITING_FOR_TURN;
+    wait_for_initial_game_files();
     moves = parse_pregame_moves();
 
     while(True):
         # wait for referee to remove the wongtron.go file
         if state == WongtronState.WAITING_FOR_OPP_TURN:
-            if not file_present(TURN_INDICATOR_FILENAME):
+            if not file_present(NAME + '.go'):
                 state = WongtronState.WAITING_FOR_TURN;
             else:
                 sleep(WAIT_REFRESH_SECONDS);
 
         # wait for wongtron.go file
         elif state == WongtronState.WAITING_FOR_TURN:
-            if file_present(TURN_INDICATOR_FILENAME):
+            if file_present(NAME + '.go'):
                 state = WongtronState.PLAYING;
             else:
+                print('waiting')
                 sleep(WAIT_REFRESH_SECONDS);
 
         # play our turn 

@@ -82,7 +82,6 @@ class Game:
 
             if self.winner != gp.NO_MARKER:
                 self.end_game()
-                running = False
                 continue
 
             current_marker = self.markers[self.current_player]
@@ -108,6 +107,7 @@ class Game:
                     self.winner = gp.DRAW
                 self.end_game(reason=msg)
                 running = False
+                continue
             else:
                 selected_move = move
 
@@ -135,6 +135,7 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    continue
 
             #  Drawing function
             disp.draw_game_board(self.main_board, self.main_board_wins, self.current_local_board, disp.X_OFFSET,
