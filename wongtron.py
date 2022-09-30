@@ -174,7 +174,7 @@ def check_win_global(boards):
     if finished_boards == 24: return [True, "DRAW"]
     else: return [False]
 
-#returns True if board is done and winner if board is done
+#returns True if board is done and winner of finished board
 def check_win_local(board):
     global WINNING_LINES
     filled_cells = 0
@@ -199,6 +199,34 @@ def count_boards_in_line(line, boards):
     wong = boards_line.count([True, "WONG"])
     opp = boards_line.count([True, "OPP"])
     return wong, opp
+
+#move check functions assume moves are wongtron's moves and are occuring on empty cells
+def is_win_subgame(board, move):
+    global WINNING_LINES
+    for line in WINNING_LINES:
+        if move in line: 
+            wong, opp = count_cells_in_line(board, line)
+            #if 2 cells in the line are wong, 3rd is empty and is the move
+            if wong is 2: return True
+    return False
+
+def is_two_in_a_row(board, move):
+    global WINNING_LINES
+    for line in WINNING_LINES:
+        if move in line: 
+            wong, opp = count_cells_in_line(board, line)
+            #1 current wong, no opp in line
+            if wong is 1 and opp is 0: return True
+    return False
+
+def is_block(board, move):
+    global WINNING_LINES
+    for line in WINNING_LINES:
+        if move in line: 
+            wong, opp = count_cells_in_line(board, line)
+            #2 current opp, move would block line
+            if opp is 2: return True
+    return False
 
 def find_valid_moves(boards, last_move):
     last_cell_num = last_move.cell_number;
