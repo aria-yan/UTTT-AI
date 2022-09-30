@@ -149,7 +149,8 @@ def generate_valid_random_string():
             valid = valid - banned[nums[i - 1]]
         choice = random.choice(list(valid))
         nums.append(choice)
-        banned[nums[i]].add(choice)
+        if i > 0:
+            banned[nums[i-1]].add(choice)
 
     return nums
 

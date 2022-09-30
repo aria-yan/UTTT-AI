@@ -7,8 +7,8 @@ import display as disp
 import human
 
 
-def nums_output(nums):
-    symbols = ['X', 'O']
+def nums_output(nums, p1_name, p2_name):
+    symbols = [p1_name, p2_name]
     s = ''
     i = 0
     j = 1
@@ -56,7 +56,7 @@ class Game:
         if rand_start:
             nums = gp.get_init_random_string()
             ffm = open("first_four_moves", "w")
-            ffm.write(nums_output(nums))
+            ffm.write(nums_output(nums, p1_name, p2_name))
             ffm.close()
             i = 0
             j = 1

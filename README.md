@@ -57,6 +57,18 @@ the `project-2-referee-bugs` channel in Slack.
 The first version of the referee did not produce a *end_game* file like it should.
 This version fixes that issue and updates the output messages to match the ones in Canvas.
 
+## UPDATE TO V3 09/20/2022
+
+The previous version of the referee did not filter out invalid initial moves.
+This version fixes that issue so the same move cannot be made twice.
+
+## UPDATE TO V4 09/20/2022
+
+The previous version of the referee used 'X' and 'O' in the first four moves
+file to indicate player moves; this is confusing because who is 'X' and who is
+'O' is randomly chosen and is
+not communicated to the players directly. To make communication easier for the
+players, the referee now uses the player names in the first_four_moves file.
 _________________________________________________________________________
 
 That is all! Have fun playing UTTT and finding fun ways to break my code...
