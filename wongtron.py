@@ -158,19 +158,27 @@ def write_move(move):
 # play functions
 # -------------------------------------- #
 
-#NOT FINISHED
+#returns True if game is over and winner of game
 def check_win_global(boards):
-    return False;
+    global WINNING_LINES
+    finished_boards = 0
+    for line in WINNING_LINES:
+        wong, opp = count_boards_in_line(line, boards)
+        if wong == 3: return [True, "WONG"]
+        elif opp == 3: return [True, "OPP"]
+        else: finished_boards += wong + opp
+    if finished_boards == 24: return [True, "DRAW"]
+    else: return [False]
 
 #returns True if board is done and winner if board is done
 def check_win_local(board):
     global WINNING_LINES
     filled_cells = 0
     for line in WINNING_LINES:
-        wong, opp, empty = count_cells_in_line(line, board)
+        wong, opp = count_cells_in_line(line, board)
         if wong == 3: return [True, "WONG"]
         elif opp == 3: return [True, "OPP"]
-        else: filled_cells +=  + wong + opp
+        else: filled_cells += wong + opp
     if filled_cells == 24: return [True, "DRAW"]
     else: return [False]
 
@@ -179,14 +187,14 @@ def count_cells_in_line(line, board):
     board_line = [board[line[0]], board[line[1]], board[line[2]]]
     wong = board_line.count(CellState.WONG)
     opp = board_line.count(CellState.OPP)
-    empty = board_line.count(CellState.EMPTY)
-    return wong, opp, empty
+    return wong, opp
 
-#NOT FINISHED
+#same as above but boards instead of cells
 def count_boards_in_line(line, boards): 
-    boards_line = [boards[line[0]], boards[line[1]], boards[line[2]]]
-    wong = boards_line
-    return wong, opp, empty
+    boards_line = map(check_win_local, [boards[line[0]], boards[line[1]], boards[line[2]]])
+    wong = boards_line.count([True, "WONG"])
+    opp = boards_line.count([True, "OPP"])
+    return wong, opp
 
 def find_valid_moves(boards, last_move):
     return [];
