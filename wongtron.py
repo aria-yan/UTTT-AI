@@ -155,6 +155,14 @@ def write_move(move):
     move_file.write(NAME+" "+str(move.board_number)+" "+str(move.cell_number)+"\n");
 
 # -------------------------------------- #
+# printing functions
+# -------------------------------------- #
+
+def print_move(move):
+    player_string = 'wongtron' if move.wongtron else 'opp';
+    print(f'{player_string} {move.board_number} {move.cell_number}');
+
+# -------------------------------------- #
 # play functions
 # -------------------------------------- #
 
@@ -197,12 +205,27 @@ def count_boards_in_line(line, boards):
     return wong, opp
 
 def find_valid_moves(boards, last_move):
-    return [];
-    # last_cell_num = last_move.cell_number;
-    # next_board = boards[last_cell_num];
-    # if (solved)
+    valid_moves = [];
+    last_cell_num = last_move.cell_number;
+    next_board = boards[last_cell_num];
+
+    # if board won, find valid moves in all incomplete boards
+    if check_win_local(next_board)[0]:
+        for board_num, board in enumerate(boards):
+            if not check_win_local(board)[0]:
+                for cell_num, cell in enumerate(next_board):
+                    if cell == CellState.EMPTY:
+                        valid_moves.append(Move(True, board_num, cell_num));
+    # elif board incomplete
+    else: 
+        for cell_num, cell in enumerate(next_board):
+            if cell == CellState.EMPTY:
+                valid_moves.append(Move(True, last_cell_num, cell_num));
+
+    return valid_moves;
 
 def play(moves):
+    #generate board from moves
     boards = init_boards();
     for move in moves:
         apply_move(boards, move);
@@ -210,13 +233,21 @@ def play(moves):
     last_move = moves[-1];
     valid_moves = find_valid_moves(boards, last_move);
     
-    return Move(True, 0, 0);
+    return valid_moves[0];
 
 # -------------------------------------- #
 # main
 # -------------------------------------- #
 
 def main():
+    boards = init_boards();
+    m = Move(False, 4, 4);
+    apply_move(boards, m);
+    mvs = find_valid_moves(boards, m);
+    for mv in mvs:
+        print_move(mv);
+    return;
+
     # init game state
     state = WongtronState.WAITING_FOR_TURN;
     moves = parse_pregame_moves();
