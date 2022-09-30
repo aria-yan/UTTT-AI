@@ -213,7 +213,7 @@ def find_valid_moves(boards, last_move):
     if check_win_local(next_board)[0]:
         for board_num, board in enumerate(boards):
             if not check_win_local(board)[0]:
-                for cell_num, cell in enumerate(next_board):
+                for cell_num, cell in enumerate(board):
                     if cell == CellState.EMPTY:
                         valid_moves.append(Move(True, board_num, cell_num));
     # elif board incomplete
@@ -241,6 +241,9 @@ def play(moves):
 
 def main():
     boards = init_boards();
+    apply_move(boards, Move(True, 4, 0));
+    apply_move(boards, Move(True, 4, 1));
+    apply_move(boards, Move(True, 4, 2));
     m = Move(False, 4, 4);
     apply_move(boards, m);
     mvs = find_valid_moves(boards, m);
