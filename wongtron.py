@@ -106,7 +106,7 @@ def either_go_file_present():
             return True;
     return False;
 
-# wait till move file and one of the go files exists
+    # wait till move file and one of the go files exists
 def wait_for_initial_game_files():
     while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
         print('waiting for initial game files')
@@ -297,7 +297,7 @@ def play(moves):
 
     last_move = moves[-1];
     valid_moves = find_valid_moves(boards, last_move);
-
+    
     best_move = valid_moves[0];
     best_move_score = eval(boards, best_move);
 
@@ -335,17 +335,23 @@ def simple_eval(board):
     for square in range(9):
 
         if (board[square] == CellState.EMPTY):
-            if (0):
-                return 10
-            #elif ()
-            #elif ()
+            
+            if (is_local_win(board, square)):
+                square_calcs.append(5)
+            
+            elif (is_local_block(board,square)):
+                square_calcs.append(4)
+            
+            elif (is_local_two_in_a_row(board,square)):
+                square_calcs.append(3)
+            
             else:
                 if(square in CellType.EDGE):
                     square_calcs.append(1)
                 elif(square in CellType.CORNER):
                     square_calcs.append(0.75)
                 else:
-                    square_calcs.append(1)
+                    square_calcs.append(0.5)
 
         else:
             square_calcs.append(0)
