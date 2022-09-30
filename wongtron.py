@@ -14,6 +14,7 @@ PREGAME_MOVES_FILENAME = 'first_four_moves';
 MOVE_FILENAME = 'move_file';
 WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
+WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
 
 # -------------------------------------- #
 # imports
@@ -158,11 +159,35 @@ def write_move(move):
 # play functions
 # -------------------------------------- #
 
+#NOT FINISHED
 def check_win_global(boards):
     return False;
 
-def check_win_local(boards):
-    return False;
+#returns True if board is done and winner if board is done
+def check_win_local(board):
+    global WINNING_LINES
+    filled_cells = 0
+    for line in WINNING_LINES:
+        wong, opp, empty = count_cells_in_line(line, board)
+        if wong == 3: return [True, "WONG"]
+        elif opp == 3: return [True, "OPP"]
+        else: filled_cells +=  + wong + opp
+    if filled_cells == 24: return [True, "DRAW"]
+    else: return [False]
+
+#returns the # of wongtron cells, opp cells, or empty cells in a WINNING_LINE
+def count_cells_in_line(line, board): 
+    board_line = [board[line[0]], board[line[1]], board[line[2]]]
+    wong = board_line.count(CellState.WONG)
+    opp = board_line.count(CellState.OPP)
+    empty = board_line.count(CellState.EMPTY)
+    return wong, opp, empty
+
+#NOT FINISHED
+def count_boards_in_line(line, boards): 
+    boards_line = [boards[line[0]], boards[line[1]], boards[line[2]]]
+    wong = boards_line
+    return wong, opp, empty
 
 def find_valid_moves(boards, last_move):
     return [];
