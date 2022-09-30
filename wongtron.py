@@ -189,12 +189,27 @@ def count_boards_in_line(line, boards):
     return wong, opp, empty
 
 def find_valid_moves(boards, last_move):
-    return [];
-    # last_cell_num = last_move.cell_number;
-    # next_board = boards[last_cell_num];
-    # if (solved)
+    valid_moves = [];
+    last_cell_num = last_move.cell_number;
+    next_board = boards[last_cell_num];
+
+    # if board won, find valid moves in all incomplete boards
+    if check_win_local(next_board):
+        for board_num, board in enumerate(boards):
+            if not check_win_local(board):
+                for cell_num, cell in enumerate(next_board):
+                    if cell == CellState.EMPTY:
+                        valid_moves.append(Move(True, board_num, cell_num));
+    # elif board incomplete
+    else: 
+        for cell_num, cell in enumerate(next_board):
+            if cell == CellState.EMPTY:
+                valid_moves.append(Move(True, next_board, cell_num));
+
+    return valid_moves;
 
 def play(moves):
+    #generate board from moves
     boards = init_boards();
     for move in moves:
         apply_move(boards, move);
@@ -202,7 +217,7 @@ def play(moves):
     last_move = moves[-1];
     valid_moves = find_valid_moves(boards, last_move);
     
-    return Move(True, 0, 0);
+    return valid_moves[0];
 
 # -------------------------------------- #
 # main
