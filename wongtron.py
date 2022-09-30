@@ -17,7 +17,7 @@ NAME = 'wongtron';
 WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
 
 #dev controls
-PRINT_AND_WAIT_FOR_OK_EACH_TURN = False;
+PRINT_AND_WAIT_FOR_OK_EACH_TURN = True;
 
 # -------------------------------------- #
 # imports
@@ -220,6 +220,12 @@ def find_valid_moves(boards, last_move):
 
     return valid_moves;
 
+def eval(boards, move):
+    return 1;
+
+def minmax(boards, last_move):
+    return eval(boards, last_move);
+
 def play(moves):
     our_move = None;
     #generate board from moves
@@ -230,7 +236,15 @@ def play(moves):
     last_move = moves[-1];
     valid_moves = find_valid_moves(boards, last_move);
 
-    our_move = valid_moves[0];
+    best_move = valid_moves[0];
+    best_move_score = eval(boards, best_move);
+
+    for move in valid_moves[1:]:
+        score = minmax(boards, move);
+        if score > best_move_score:
+            best_move_score = score;
+            best_move = move;
+    our_move = best_move;
 
     if PRINT_AND_WAIT_FOR_OK_EACH_TURN:
         print('our move: ', end='');
