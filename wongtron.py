@@ -201,7 +201,8 @@ def count_boards_in_line(line, boards):
     return wong, opp
 
 #move check functions assume moves are wongtron's moves and are occuring on empty cells
-def is_win_subgame(board, move):
+#move is integer of local move position
+def is_local_win(board, move):
     global WINNING_LINES
     for line in WINNING_LINES:
         if move in line: 
@@ -210,7 +211,7 @@ def is_win_subgame(board, move):
             if wong is 2: return True
     return False
 
-def is_two_in_a_row(board, move):
+def is_local_two_in_a_row(board, move):
     global WINNING_LINES
     for line in WINNING_LINES:
         if move in line: 
@@ -219,7 +220,7 @@ def is_two_in_a_row(board, move):
             if wong is 1 and opp is 0: return True
     return False
 
-def is_block(board, move):
+def is_local_block(board, move):
     global WINNING_LINES
     for line in WINNING_LINES:
         if move in line: 
@@ -227,6 +228,32 @@ def is_block(board, move):
             #2 current opp, move would block line
             if opp is 2: return True
     return False
+
+#move is (global, local) tuple
+def is_global_win(boards, move):
+    global WINNING_LINES
+    #move does not win local board
+    if not is_local_win(boards[move[0]], move[1]): return False
+    for line in WINNING_LINES:
+        if move[0] in line:
+            wong, opp = count_boards_in_line(line, boards)
+            if wong is 2: return True
+    
+def is_global_two_in_a_row(boards, move):
+    global WINNING_LINES
+    if not is_local_win(boards[move[0]], move[1]): return False
+    for line in WINNING_LINES:
+        if move[0] in line:
+            wong, opp = count_boards_in_line(line, boards)
+            if wong is 1 and opp is 0: return True
+
+def is_global_block(boards, move):
+    global WINNING_LINES
+    if not is_local_win(boards[move[0]], move[1]): return False
+    for line in WINNING_LINES:
+        if move[0] in line:
+            wong, opp = count_boards_in_line(line, boards)
+            if opp is 2: return True
 
 def find_valid_moves(boards, last_move):
     last_cell_num = last_move.cell_number;
