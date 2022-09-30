@@ -20,6 +20,7 @@ WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]
 # imports
 # -------------------------------------- #
 
+from email.base64mime import body_encode
 from time import sleep
 from enum import Enum
 import argparse
@@ -46,6 +47,12 @@ class CellState(Enum):
     EMPTY = 0;
     WONG = 1;
     OPP = 2;
+
+class CellType(Enum):
+    CORNER = [0,2,6,8]
+    MIDDLE = [4]
+    EDGE = [1,3,5,7]
+
  
 # -------------------------------------- #
 # board types
@@ -234,6 +241,73 @@ def play(moves):
     valid_moves = find_valid_moves(boards, last_move);
     
     return valid_moves[0];
+
+# -------------------------------------- #
+# evaluation functions
+# -------------------------------------- #
+
+# TO-DO ADD weights
+
+def simple_eval(board):
+    
+    #Check if we are in a finished board
+    if (check_win_local(board)[0] and check_win_local(board)[1] == "WONG"):
+        return 20
+    if (check_win_local(board)[0] and check_win_local(board)[1] == "OPP"):
+        return -10
+    if (check_win_local(board)[0] and check_win_local(board)[1] == "DRAW"):
+        return 0 
+        
+    square_calcs = []
+
+    for square in range(9):
+
+        if (board[square] == CellState.EMPTY):
+            if (0):
+                return 10
+            #elif ()
+            #elif ()
+            else:
+                if(square in CellType.EDGE):
+                    square_calcs.append(1)
+                elif(square in CellType.CORNER):
+                    square_calcs.append(0.75)
+                else:
+                    square_calcs.append(1)
+
+        else:
+            square_calcs.append(0)
+            
+        
+        
+            
+    return sum(list(filter(lambda x: (x),square_calcs)))
+
+
+def weighted_eval(boards):
+    
+    board_calcs = []
+    
+    for board in boards:
+        board_calcs.append(simple_eval(board))
+
+    return sum(list(filter(lambda x: (x),board_calcs)))
+
+
+def evaluate (boards):
+    
+    if (check_win_global(boards)[0] and check_win_global(boards)[1] == "WONG"):
+        return 10000
+    if (check_win_global(boards)[0] and check_win_global(boards)[1] == "OPP"):
+        return -10000
+
+    return weighted_eval(boards)
+
+
+    
+    
+        
+
 
 # -------------------------------------- #
 # main
