@@ -16,6 +16,9 @@ WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
 WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
 
+#dev controls
+PRINT_AND_WAIT_FOR_OK_EACH_TURN = False;
+
 # -------------------------------------- #
 # imports
 # -------------------------------------- #
@@ -24,12 +27,6 @@ from time import sleep
 from enum import Enum
 import argparse
 import os
-
-# -------------------------------------- #
-# derived variables
-# -------------------------------------- #
-
-TURN_INDICATOR_FILENAME = (NAME + '.go');
 
 # -------------------------------------- #
 # enums
@@ -102,17 +99,15 @@ def either_go_file_present():
             return True;
     return False;
 
-def parse_pregame_moves():
-    move_lines = [];
-    moves = [];
-
-    # wait till move file and one of the go files exists
+# wait till move file and one of the go files exists
+def wait_for_initial_game_files():
     while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
         print('waiting for initial game files')
         sleep(WAIT_REFRESH_SECONDS);
 
-    # the first and third pregame moves belong to whoever gets the first turn.
-    wongtrons_turn_first = file_present(TURN_INDICATOR_FILENAME) and (len(parse_move_file()) == 0);
+def parse_pregame_moves():
+    move_lines = [];
+    moves = [];
 
     # parse first four moves
     with open(PREGAME_MOVES_FILENAME) as f:
@@ -121,9 +116,10 @@ def parse_pregame_moves():
         split_move_line = line.split();
         board_num = int(split_move_line[1]);
         cell_num = int(split_move_line[2]);
+        player = split_move_line[0];
 
         # this move begins to wong if wong is first turn and this is the first or third pregame move
-        wongs_move = wongtrons_turn_first if (i % 2 == 0) else not wongtrons_turn_first;
+        wongs_move = player == NAME;
         
         moves.append(Move(wongs_move, board_num, cell_num));
 
@@ -225,6 +221,7 @@ def find_valid_moves(boards, last_move):
     return valid_moves;
 
 def play(moves):
+    our_move = None;
     #generate board from moves
     boards = init_boards();
     for move in moves:
@@ -232,8 +229,14 @@ def play(moves):
 
     last_move = moves[-1];
     valid_moves = find_valid_moves(boards, last_move);
-    
-    return valid_moves[0];
+
+    our_move = valid_moves[0];
+
+    if PRINT_AND_WAIT_FOR_OK_EACH_TURN:
+        print('our move: ', end='');
+        print_move(our_move);
+        input('press enter to continue.');
+    return our_move;
 
 # -------------------------------------- #
 # main
@@ -242,21 +245,23 @@ def play(moves):
 def main():
     # init game state
     state = WongtronState.WAITING_FOR_TURN;
+    wait_for_initial_game_files();
     moves = parse_pregame_moves();
 
     while(True):
         # wait for referee to remove the wongtron.go file
         if state == WongtronState.WAITING_FOR_OPP_TURN:
-            if not file_present(TURN_INDICATOR_FILENAME):
+            if not file_present(NAME + '.go'):
                 state = WongtronState.WAITING_FOR_TURN;
             else:
                 sleep(WAIT_REFRESH_SECONDS);
 
         # wait for wongtron.go file
         elif state == WongtronState.WAITING_FOR_TURN:
-            if file_present(TURN_INDICATOR_FILENAME):
+            if file_present(NAME + '.go'):
                 state = WongtronState.PLAYING;
             else:
+                print('waiting')
                 sleep(WAIT_REFRESH_SECONDS);
 
         # play our turn 
