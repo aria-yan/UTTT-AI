@@ -75,6 +75,16 @@ players, the referee now uses the player names in the first_four_moves file.
 The clean() function seems to not work well on the previous versions of the referee. 
 This update fixes the clean function and modifies the referee to clean up its files when the game is over.
 
+## UPDATE TO V6 09/30/2022
+
+The clean() function has been update _again_ to be cross-platform and work on different python versions.
+The default screen size is smaller.
+The referee now handles incorrectly formatted moves more gracefully.
+
+## UPDATE TO V7 09/30/2022
+
+The referee now creates both .go files at the end of the game, as described in canvas.
+
 _________________________________________________________________________
 
 That is all! Have fun playing UTTT and finding fun ways to break my code...
