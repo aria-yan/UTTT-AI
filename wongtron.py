@@ -15,6 +15,9 @@ MOVE_FILENAME = 'move_file';
 WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
 WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
+MINMAX_DEPTH_LIMIT = 5;
+W_SCORE =  1000;
+L_SCORE = -1000;
 
 #dev controls
 PRINT_AND_WAIT_FOR_OK_EACH_TURN = True;
@@ -174,6 +177,14 @@ def check_win_global(boards):
     if finished_boards == 24: return [True, "DRAW"]
     else: return [False]
 
+def wongtron_global_win(boards):
+    check_result = check_win_global(boards);
+    return check_result[0] and check_result[1] == "WONG"; # TODO write test case for this
+
+def opp_global_win(boards):
+    check_result = check_win_global(boards);
+    return check_result[0] and check_result[1] == "OPP"; # TODO write test case for this
+
 #returns True if board is done and winner if board is done
 def check_win_local(board):
     global WINNING_LINES
@@ -203,6 +214,7 @@ def count_boards_in_line(line, boards):
 def find_valid_moves(boards, last_move):
     last_cell_num = last_move.cell_number;
     next_board = boards[last_cell_num];
+    wongs_turn = not last_move.wongtron;
     valid_moves = [];
 
     # if board won, find valid moves in all incomplete boards
@@ -211,20 +223,64 @@ def find_valid_moves(boards, last_move):
             if not check_win_local(board)[0]:
                 for cell_num, cell in enumerate(board):
                     if cell == CellState.EMPTY:
-                        valid_moves.append(Move(True, board_num, cell_num));
+                        valid_moves.append(Move(wongs_turn, board_num, cell_num));
     # elif board incomplete
     else: 
         for cell_num, cell in enumerate(next_board):
             if cell == CellState.EMPTY:
-                valid_moves.append(Move(True, last_cell_num, cell_num));
+                valid_moves.append(Move(wongs_turn, last_cell_num, cell_num));
 
     return valid_moves;
 
-def eval(boards, move):
+def eval(boards):
     return 1;
 
-def minmax(boards, last_move):
-    return eval(boards, last_move);
+# return true if minmax level is a wongtron move
+def mm_wongtron_move(depth):
+    return depth % 2 == 0; # TODO double check this
+
+def minmax(boards, last_move, depth, levels_dominant_score):
+    result_boards = apply_move(boards, last_move);
+    
+    #  win
+    if wongtron_global_win(boards):
+        return W_SCORE;
+
+    #  loss
+    elif opp_global_win(boards):
+        return L_SCORE;
+
+    # depth reached 
+    elif depth > MINMAX_DEPTH_LIMIT:
+        return eval(result_boards);
+
+    # gen new moves, minmax on each, prune 
+    else:
+        possible_moves = find_valid_moves(boards, last_move)
+
+        dominant_move = possible_moves[0];
+        dominant_score = minmax(result_boards, dominant_move, depth + 1, None);
+        for move in possible_moves[1:]:
+
+            # pruning: return if the levels dominant score leaves this branch unusable # TODO double check this
+            if levels_dominant_score is not None:
+                if (mm_wongtron_move(depth) and dominant_score < levels_dominant_score): # wong will select a previous branch
+                    break;
+                if (not mm_wongtron_move(depth) and dominant_score > levels_dominant_score): # opp will select a previous branch
+                    break;
+            
+            score = minmax(result_boards, move, depth + 1, dominant_score);
+
+            # check if score dominates
+            if (mm_wongtron_move(depth) and score < dominant_score) or (not mm_wongtron_move(depth) and score > dominant_score): # TODO double check this
+                dominant_score = score;
+                dominant_move = move;
+    
+    return dominant_score;
+
+# minmax call for the next wongtron move
+def minmax_start(boards, next_wongtron_move_candidate):
+    minmax(boards, next_wongtron_move_candidate, 0, None); # TODO double check this
 
 def play(moves):
     our_move = None;
@@ -237,10 +293,10 @@ def play(moves):
     valid_moves = find_valid_moves(boards, last_move);
 
     best_move = valid_moves[0];
-    best_move_score = eval(boards, best_move);
+    best_move_score = minmax_start(boards, best_move);
 
     for move in valid_moves[1:]:
-        score = minmax(boards, move);
+        score = minmax_start(boards, move);
         if score > best_move_score:
             best_move_score = score;
             best_move = move;
