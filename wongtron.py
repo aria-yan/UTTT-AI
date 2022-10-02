@@ -26,6 +26,7 @@ PRINT_AND_WAIT_FOR_OK_EACH_TURN = True;
 # imports
 # -------------------------------------- #
 
+from email.base64mime import body_encode
 from time import sleep
 from enum import Enum
 import argparse
@@ -46,6 +47,12 @@ class CellState(Enum):
     EMPTY = 0;
     WONG = 1;
     OPP = 2;
+
+class CellType(Enum):
+    CORNER = [0,2,6,8]
+    MIDDLE = [4]
+    EDGE = [1,3,5,7]
+
  
 # -------------------------------------- #
 # board types
@@ -102,7 +109,7 @@ def either_go_file_present():
             return True;
     return False;
 
-# wait till move file and one of the go files exists
+    # wait till move file and one of the go files exists
 def wait_for_initial_game_files():
     while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
         print('waiting for initial game files')
@@ -185,7 +192,7 @@ def opp_global_win(boards):
     check_result = check_win_global(boards);
     return check_result[0] and check_result[1] == "OPP"; # TODO write test case for this
 
-#returns True if board is done and winner if board is done
+#returns True if board is done and winner of finished board
 def check_win_local(board):
     global WINNING_LINES
     filled_cells = 0
@@ -210,6 +217,85 @@ def count_boards_in_line(line, boards):
     wong = boards_line.count([True, "WONG"])
     opp = boards_line.count([True, "OPP"])
     return wong, opp
+
+#move check functions assume moves are wongtron's moves and are occuring on empty cells
+#move is integer of local move position
+def is_local_win(board, move):
+    global WINNING_LINES
+    for line in WINNING_LINES:
+        if move in line: 
+            wong, opp = count_cells_in_line(board, line)
+            #if 2 cells in the line are wong, 3rd is empty and is the move
+            if wong == 2: return True
+    return False
+
+def is_local_two_in_a_row(board, move):
+    global WINNING_LINES
+    for line in WINNING_LINES:
+        if move in line: 
+            wong, opp = count_cells_in_line(board, line)
+            #1 current wong, no opp in line
+            if wong == 1 and opp == 0: return True
+    return False
+
+def is_local_block(board, move):
+    global WINNING_LINES
+    for line in WINNING_LINES:
+        if move in line: 
+            wong, opp = count_cells_in_line(board, line)
+            #2 current opp, move would block line
+            if opp == 2: return True
+    return False
+
+#move is (global, local) tuple
+def is_global_win(boards, move):
+    global WINNING_LINES
+    #move does not win local board
+    if not is_local_win(boards[move[0]], move[1]): return False
+    for line in WINNING_LINES:
+        if move[0] in line:
+            wong, opp = count_boards_in_line(line, boards)
+            if wong == 2: return True
+    
+def is_global_two_in_a_row(boards, move):
+    global WINNING_LINES
+    if not is_local_win(boards[move[0]], move[1]): return False
+    for line in WINNING_LINES:
+        if move[0] in line:
+            wong, opp = count_boards_in_line(line, boards)
+            if wong == 1 and opp == 0: return True
+
+def is_global_block(boards, move):
+    global WINNING_LINES
+    if not is_local_win(boards[move[0]], move[1]): return False
+    for line in WINNING_LINES:
+        if move[0] in line:
+            wong, opp = count_boards_in_line(line, boards)
+            if opp == 2: return True
+
+#winning lines based on player, if 0, board is dead
+def local_winning_lines(board, player):
+    global WINNING_LINES
+    wonglines=0
+    opplines=0
+    for line in WINNING_LINES:
+        wong, opp = count_cells_in_line(line, board)
+        if wong == 0: opp += 1
+        if opp == 0: wong += 1
+    if player == "wong": return wonglines
+    elif player == "opp": return opplines
+
+def global_winning_lines(boards, player):
+    global WINNING_LINES
+    wonglines=0
+    opplines=0
+    for line in WINNING_LINES:
+        wong, opp = count_boards_in_line(line, boards)
+        if wong == 0: opp += 1
+        if opp == 0: wong += 1
+    if player == "wong": return wonglines
+    elif player == "opp": return opplines
+    
 
 def find_valid_moves(boards, last_move):
     last_cell_num = last_move.cell_number;
@@ -291,7 +377,7 @@ def play(moves):
 
     last_move = moves[-1];
     valid_moves = find_valid_moves(boards, last_move);
-
+    
     best_move = valid_moves[0];
     best_move_score = minmax_start(boards, best_move);
 
@@ -307,6 +393,79 @@ def play(moves):
         print_move(our_move);
         input('press enter to continue.');
     return our_move;
+
+# -------------------------------------- #
+# evaluation functions
+# -------------------------------------- #
+
+# TO-DO ADD weights
+
+def simple_eval(board):
+    
+    #Check if we are in a finished board
+    if (check_win_local(board)[0] and check_win_local(board)[1] == "WONG"):
+        return 20
+    if (check_win_local(board)[0] and check_win_local(board)[1] == "OPP"):
+        return -10
+    if (check_win_local(board)[0] and check_win_local(board)[1] == "DRAW"):
+        return 0 
+        
+    square_calcs = []
+
+    for square in range(9):
+
+        if (board[square] == CellState.EMPTY):
+            
+            if (is_local_win(board, square)):
+                square_calcs.append(5)
+            
+            elif (is_local_block(board,square)):
+                square_calcs.append(4)
+            
+            elif (is_local_two_in_a_row(board,square)):
+                square_calcs.append(3)
+            
+            else:
+                if(square in CellType.EDGE):
+                    square_calcs.append(1)
+                elif(square in CellType.CORNER):
+                    square_calcs.append(0.75)
+                else:
+                    square_calcs.append(0.5)
+
+        else:
+            square_calcs.append(0)
+            
+        
+        
+            
+    return sum(list(filter(lambda x: (x),square_calcs)))
+
+
+def weighted_eval(boards):
+    
+    board_calcs = []
+    
+    for board in boards:
+        board_calcs.append(simple_eval(board))
+
+    return sum(list(filter(lambda x: (x),board_calcs)))
+
+
+def evaluate (boards):
+    
+    if (check_win_global(boards)[0] and check_win_global(boards)[1] == "WONG"):
+        return 10000
+    if (check_win_global(boards)[0] and check_win_global(boards)[1] == "OPP"):
+        return -10000
+
+    return weighted_eval(boards)
+
+
+    
+    
+        
+
 
 # -------------------------------------- #
 # main

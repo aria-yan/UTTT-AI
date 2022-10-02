@@ -65,10 +65,15 @@ def external_player(moves, main_board, local_board_num, my_symbol, opponent_symb
                     line = next_line
 
             # Tokenize move
-            tokens = line.split()
-            group_name = tokens[0]
-            global_board = int(tokens[1])
-            local_board = int(tokens[2])
+
+            try:
+                tokens = line.split()
+                group_name = tokens[0]
+                global_board = int(tokens[1])
+                local_board = int(tokens[2])
+            except:
+                return BAD_MOVE_I_LOST, f'Invalid move!'
+
 
             # Verify that move is from expected player
             if group_name != name:
@@ -87,23 +92,7 @@ def external_player(moves, main_board, local_board_num, my_symbol, opponent_symb
 
 
 
-def clean():
-    """
-    Delete files maintained by Referee
-    :return: None
-    """
-    patterns = [
-        re.compile("move_file"),
-        re.compile("(:?.*).go"),
-        re.compile("end_game"),
-        re.compile("first_four_moves")
-    ]
 
-    files = [f for f in listdir("/") if isfile(join("/", f))]
-    for file in files:
-        for pattern in patterns:
-            if pattern.match(file):
-                os.remove(file)
 
 
 

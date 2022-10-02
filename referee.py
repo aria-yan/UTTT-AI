@@ -9,15 +9,42 @@ Date:   3 September 2022
 """
 
 import argparse
+import os
+import re
 import sys
 import random
-from external_players import clean, get_competitors
+from os import listdir
+from os.path import isfile, join
+
+from external_players import get_competitors
 from game import Game
+
+def clean():
+    """
+    Delete files maintained by Referee
+    :return: None
+    """
+    print('cleaning...')
+    patterns = [
+        re.compile("move_file"),
+        re.compile("(:?.*).go"),
+        re.compile("end_game"),
+        re.compile("first_four_moves")
+    ]
+    loc = os.path.abspath('referee.py')[0:-len('referee.py')]
+    files = [f for f in listdir(loc) if isfile(join(loc, f))]
+    for file in files:
+        for pattern in patterns:
+            if pattern.match(file):
+                os.remove(file)
+
+
 
 def main():
     """
     Main Referee function
     """
+
 
     # Read in arguments from command line
     parser = argparse.ArgumentParser(description="Referee a game of Othello between two programs")
@@ -54,4 +81,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except:
+        print('________________')
+    clean()
