@@ -215,7 +215,7 @@ def is_local_win(board, move):
         if move in line: 
             wong, opp = count_cells_in_line(board, line)
             #if 2 cells in the line are wong, 3rd is empty and is the move
-            if wong is 2: return True
+            if wong == 2: return True
     return False
 
 def is_local_two_in_a_row(board, move):
@@ -224,7 +224,7 @@ def is_local_two_in_a_row(board, move):
         if move in line: 
             wong, opp = count_cells_in_line(board, line)
             #1 current wong, no opp in line
-            if wong is 1 and opp is 0: return True
+            if wong == 1 and opp == 0: return True
     return False
 
 def is_local_block(board, move):
@@ -233,7 +233,7 @@ def is_local_block(board, move):
         if move in line: 
             wong, opp = count_cells_in_line(board, line)
             #2 current opp, move would block line
-            if opp is 2: return True
+            if opp == 2: return True
     return False
 
 #move is (global, local) tuple
@@ -244,7 +244,7 @@ def is_global_win(boards, move):
     for line in WINNING_LINES:
         if move[0] in line:
             wong, opp = count_boards_in_line(line, boards)
-            if wong is 2: return True
+            if wong == 2: return True
     
 def is_global_two_in_a_row(boards, move):
     global WINNING_LINES
@@ -252,7 +252,7 @@ def is_global_two_in_a_row(boards, move):
     for line in WINNING_LINES:
         if move[0] in line:
             wong, opp = count_boards_in_line(line, boards)
-            if wong is 1 and opp is 0: return True
+            if wong == 1 and opp == 0: return True
 
 def is_global_block(boards, move):
     global WINNING_LINES
@@ -260,7 +260,31 @@ def is_global_block(boards, move):
     for line in WINNING_LINES:
         if move[0] in line:
             wong, opp = count_boards_in_line(line, boards)
-            if opp is 2: return True
+            if opp == 2: return True
+
+#winning lines based on player, if 0, board is dead
+def local_winning_lines(board, player):
+    global WINNING_LINES
+    wonglines=0
+    opplines=0
+    for line in WINNING_LINES:
+        wong, opp = count_cells_in_line(line, board)
+        if wong == 0: opp += 1
+        if opp == 0: wong += 1
+    if player == "wong": return wonglines
+    elif player == "opp": return opplines
+
+def global_winning_lines(boards, player):
+    global WINNING_LINES
+    wonglines=0
+    opplines=0
+    for line in WINNING_LINES:
+        wong, opp = count_boards_in_line(line, boards)
+        if wong == 0: opp += 1
+        if opp == 0: wong += 1
+    if player == "wong": return wonglines
+    elif player == "opp": return opplines
+    
 
 def find_valid_moves(boards, last_move):
     last_cell_num = last_move.cell_number;
