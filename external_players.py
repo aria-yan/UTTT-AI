@@ -65,10 +65,15 @@ def external_player(moves, main_board, local_board_num, my_symbol, opponent_symb
                     line = next_line
 
             # Tokenize move
-            tokens = line.split()
-            group_name = tokens[0]
-            global_board = int(tokens[1])
-            local_board = int(tokens[2])
+
+            try:
+                tokens = line.split()
+                group_name = tokens[0]
+                global_board = int(tokens[1])
+                local_board = int(tokens[2])
+            except:
+                return BAD_MOVE_I_LOST, f'Invalid move!'
+
 
             # Verify that move is from expected player
             if group_name != name:

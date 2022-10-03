@@ -15,6 +15,9 @@ MOVE_FILENAME = 'move_file';
 WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
 WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
+MINMAX_DEPTH_LIMIT = 2;
+W_SCORE =  1000;
+L_SCORE = -1000;
 
 #dev controls
 PRINT_AND_WAIT_FOR_OK_EACH_TURN = True;
@@ -79,12 +82,24 @@ def init_boards():
         boards.append(init_classic_board());
     return boards;
 
-# apply the given move object to the given boards
+# deep copy a given ultimate board, return copy
+def copy_boards(boards):
+    new_boards = [];
+    for board_num, board in enumerate(boards):
+        new_boards.append([]);
+        for cell in board:
+            new_boards[board_num].append(cell);
+    return new_boards;
+
+# returns a new ultimate board with the given move applied
 def apply_move(boards, move):
-   board_number = move.board_number;
-   cell_number = move.cell_number;
-   cell_state = CellState.WONG if move.wongtron else CellState.OPP;
-   boards[board_number][cell_number] = cell_state;
+    # copy board
+    new_boards = copy_boards(boards);
+    board_number = move.board_number;
+    cell_number = move.cell_number;
+    cell_state = CellState.WONG if move.wongtron else CellState.OPP;
+    new_boards[board_number][cell_number] = cell_state;
+    return new_boards;
 
 # -------------------------------------- #
 # file IO functions
@@ -181,6 +196,14 @@ def check_win_global(boards):
     if finished_boards == 24: return [True, "DRAW"]
     else: return [False]
 
+def wongtron_global_win(boards):
+    check_result = check_win_global(boards);
+    return check_result[0] and check_result[1] == "WONG"; # TODO write test case for this
+
+def opp_global_win(boards):
+    check_result = check_win_global(boards);
+    return check_result[0] and check_result[1] == "OPP"; # TODO write test case for this
+
 #returns True if board is done and winner of finished board
 def check_win_local(board):
     global WINNING_LINES
@@ -203,8 +226,12 @@ def count_cells_in_line(line, board):
 #same as above but boards instead of cells
 def count_boards_in_line(line, boards): 
     boards_line = map(check_win_local, [boards[line[0]], boards[line[1]], boards[line[2]]])
-    wong = boards_line.count([True, "WONG"])
-    opp = boards_line.count([True, "OPP"])
+    wong, opp = 0, 0;
+    for local_result in boards_line:
+        if local_result[0] == True and local_result[1] == "WONG":
+            wong += 1;
+        if local_result[0] == True and local_result[1] == "OPP":
+            opp += 1;
     return wong, opp
 
 #move check functions assume moves are wongtron's moves and are occuring on empty cells
@@ -215,7 +242,7 @@ def is_local_win(board, move):
         if move in line: 
             wong, opp = count_cells_in_line(board, line)
             #if 2 cells in the line are wong, 3rd is empty and is the move
-            if wong is 2: return True
+            if wong == 2: return True
     return False
 
 def is_local_two_in_a_row(board, move):
@@ -224,7 +251,7 @@ def is_local_two_in_a_row(board, move):
         if move in line: 
             wong, opp = count_cells_in_line(board, line)
             #1 current wong, no opp in line
-            if wong is 1 and opp is 0: return True
+            if wong == 1 and opp == 0: return True
     return False
 
 def is_local_block(board, move):
@@ -233,7 +260,7 @@ def is_local_block(board, move):
         if move in line: 
             wong, opp = count_cells_in_line(board, line)
             #2 current opp, move would block line
-            if opp is 2: return True
+            if opp == 2: return True
     return False
 
 #move is (global, local) tuple
@@ -244,7 +271,7 @@ def is_global_win(boards, move):
     for line in WINNING_LINES:
         if move[0] in line:
             wong, opp = count_boards_in_line(line, boards)
-            if wong is 2: return True
+            if wong == 2: return True
     
 def is_global_two_in_a_row(boards, move):
     global WINNING_LINES
@@ -252,7 +279,7 @@ def is_global_two_in_a_row(boards, move):
     for line in WINNING_LINES:
         if move[0] in line:
             wong, opp = count_boards_in_line(line, boards)
-            if wong is 1 and opp is 0: return True
+            if wong == 1 and opp == 0: return True
 
 def is_global_block(boards, move):
     global WINNING_LINES
@@ -260,11 +287,36 @@ def is_global_block(boards, move):
     for line in WINNING_LINES:
         if move[0] in line:
             wong, opp = count_boards_in_line(line, boards)
-            if opp is 2: return True
+            if opp == 2: return True
+
+#winning lines based on player, if 0, board is dead
+def local_winning_lines(board, player):
+    global WINNING_LINES
+    wonglines=0
+    opplines=0
+    for line in WINNING_LINES:
+        wong, opp = count_cells_in_line(line, board)
+        if wong == 0: opp += 1
+        if opp == 0: wong += 1
+    if player == "wong": return wonglines
+    elif player == "opp": return opplines
+
+def global_winning_lines(boards, player):
+    global WINNING_LINES
+    wonglines=0
+    opplines=0
+    for line in WINNING_LINES:
+        wong, opp = count_boards_in_line(line, boards)
+        if wong == 0: opp += 1
+        if opp == 0: wong += 1
+    if player == "wong": return wonglines
+    elif player == "opp": return opplines
+    
 
 def find_valid_moves(boards, last_move):
     last_cell_num = last_move.cell_number;
     next_board = boards[last_cell_num];
+    wongs_turn = not last_move.wongtron;
     valid_moves = [];
 
     # if board won, find valid moves in all incomplete boards
@@ -273,36 +325,80 @@ def find_valid_moves(boards, last_move):
             if not check_win_local(board)[0]:
                 for cell_num, cell in enumerate(board):
                     if cell == CellState.EMPTY:
-                        valid_moves.append(Move(True, board_num, cell_num));
+                        valid_moves.append(Move(wongs_turn, board_num, cell_num));
     # elif board incomplete
     else: 
         for cell_num, cell in enumerate(next_board):
             if cell == CellState.EMPTY:
-                valid_moves.append(Move(True, last_cell_num, cell_num));
+                valid_moves.append(Move(wongs_turn, last_cell_num, cell_num));
 
     return valid_moves;
 
-def eval(boards, move):
+def eval(boards):
     return 1;
 
-def minmax(boards, last_move):
-    return eval(boards, last_move);
+# return true if minmax level is a wongtron move
+def mm_wongtron_move(depth):
+    return depth % 2 == 0; # TODO double check this
+
+def minmax(boards, last_move, depth, levels_dominant_score):
+    result_boards = apply_move(boards, last_move);
+    
+    #  win
+    if wongtron_global_win(boards):
+        return W_SCORE;
+
+    #  loss
+    elif opp_global_win(boards):
+        return L_SCORE;
+
+    # depth reached 
+    elif depth > MINMAX_DEPTH_LIMIT:
+        return eval(result_boards);
+
+    # gen new moves, minmax on each, prune 
+    else:
+        possible_moves = find_valid_moves(boards, last_move)
+
+        dominant_move = possible_moves[0];
+        dominant_score = minmax(result_boards, dominant_move, depth + 1, None);
+        for move in possible_moves[1:]:
+
+            # pruning: return if the levels dominant score leaves this branch unusable # TODO double check this
+            if levels_dominant_score is not None:
+                if (mm_wongtron_move(depth) and dominant_score < levels_dominant_score): # wong will select a previous branch
+                    break;
+                if (not mm_wongtron_move(depth) and dominant_score > levels_dominant_score): # opp will select a previous branch
+                    break;
+            
+            score = minmax(result_boards, move, depth + 1, dominant_score);
+
+            # check if score dominates
+            if (mm_wongtron_move(depth) and score < dominant_score) or (not mm_wongtron_move(depth) and score > dominant_score): # TODO double check this
+                dominant_score = score;
+                dominant_move = move;
+    
+    return dominant_score;
+
+# minmax call for the next wongtron move
+def minmax_start(boards, next_wongtron_move_candidate):
+    return minmax(boards, next_wongtron_move_candidate, 0, None); # TODO double check this
 
 def play(moves):
     our_move = None;
     #generate board from moves
     boards = init_boards();
     for move in moves:
-        apply_move(boards, move);
+        boards = apply_move(boards, move);
 
     last_move = moves[-1];
     valid_moves = find_valid_moves(boards, last_move);
     
     best_move = valid_moves[0];
-    best_move_score = eval(boards, best_move);
+    best_move_score = minmax_start(boards, best_move);
 
     for move in valid_moves[1:]:
-        score = minmax(boards, move);
+        score = minmax_start(boards, move);
         if score > best_move_score:
             best_move_score = score;
             best_move = move;

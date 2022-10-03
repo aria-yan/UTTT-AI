@@ -3,7 +3,7 @@ import pygame
 import core_gameplay as gp
 
 #  VARIABLES
-SCREEN_SIDE = 1000
+SCREEN_SIDE = 500
 SCREEN_WIDTH = SCREEN_SIDE
 SCREEN_HEIGHT = SCREEN_SIDE
 SCREEN = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])

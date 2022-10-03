@@ -159,6 +159,8 @@ class Game:
         eg.write(msg)
         print(msg)
         eg.close()
+        open("{p}.go".format(p=self.names[0]), "w").close()
+        open("{p}.go".format(p=self.names[1]), "w").close()
         disp.wait_for_player_press()
 
 

@@ -16,10 +16,7 @@ import random
 from os import listdir
 from os.path import isfile, join
 
-import pygame
-
 from external_players import get_competitors
-import display
 from game import Game
 
 def clean():
@@ -34,17 +31,20 @@ def clean():
         re.compile("end_game"),
         re.compile("first_four_moves")
     ]
-    loc = __file__[0:-len('referee.py')]
+    loc = os.path.abspath('referee.py')[0:-len('referee.py')]
     files = [f for f in listdir(loc) if isfile(join(loc, f))]
     for file in files:
         for pattern in patterns:
             if pattern.match(file):
                 os.remove(file)
 
+
+
 def main():
     """
     Main Referee function
     """
+
 
     # Read in arguments from command line
     parser = argparse.ArgumentParser(description="Referee a game of Othello between two programs")
@@ -83,6 +83,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except pygame.error:
+    except:
         print('________________')
     clean()
