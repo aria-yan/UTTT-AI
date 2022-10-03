@@ -218,8 +218,6 @@ def check_win_local(board):
 
 #returns the # of wongtron cells, opp cells, or empty cells in a WINNING_LINE
 def count_cells_in_line(line, board): 
-    # print(str(line[0])+str(line[1])+str(line[2]))
-    # print(str(board[line[0]])+str(board[line[1]])+str(board[line[2]]))
     board_line = [board[line[0]], board[line[1]], board[line[2]]]
     wong = board_line.count(CellState.WONG)
     opp = board_line.count(CellState.OPP)
@@ -398,7 +396,6 @@ def play(moves):
     
     best_move = valid_moves[0];
     best_move_score = minmax_start(boards, best_move);
-    print("in play")
 
     for move in valid_moves[1:]:
         score = minmax_start(boards, move);
@@ -447,9 +444,9 @@ def simple_eval(board):
                 square_calcs.append(3)
             
             else:
-                if(square in CellType.EDGE):
+                if(square in CellType.EDGE.value):
                     square_calcs.append(1)
-                elif(square in CellType.CORNER):
+                elif(square in CellType.CORNER.value):
                     square_calcs.append(0.75)
                 else:
                     square_calcs.append(0.5)
