@@ -20,13 +20,15 @@ W_SCORE =  1000;
 L_SCORE = -1000;
 
 #dev controls
-PRINT_AND_WAIT_FOR_OK_EACH_TURN = True;
+PRINT_CHOSEN_MOVE = True;
+WAIT_FOR_OK_EACH_TURN = False;
+
+MOVE_DELAY_SECONDS = 1; # time to wait before writing a calculated move (debugging purposes, should be 0 during tournament)
 
 # -------------------------------------- #
 # imports
 # -------------------------------------- #
 
-from email.base64mime import body_encode
 from time import sleep
 from enum import Enum
 import argparse
@@ -63,6 +65,10 @@ class Move():
         self.wongtron = wongtron;
         self.board_number = board;
         self.cell_number = cell;
+
+    def to_string(self):
+        player_string = NAME if self.wongtron else 'opp';
+        return f'{player_string} {self.board_number} {self.cell_number}';
 
 # -------------------------------------- #
 # board functions
@@ -123,8 +129,8 @@ def either_go_file_present():
 
     # wait till move file and one of the go files exists
 def wait_for_initial_game_files():
+    print('waiting for initial game files...')
     while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
-        print('waiting for initial game files')
         sleep(WAIT_REFRESH_SECONDS);
 
 def parse_pregame_moves():
@@ -175,10 +181,6 @@ def write_move(move):
 # -------------------------------------- #
 # printing functions
 # -------------------------------------- #
-
-def print_move(move):
-    player_string = 'wongtron' if move.wongtron else 'opp';
-    print(f'{player_string} {move.board_number} {move.cell_number}');
 
 # -------------------------------------- #
 # play functions
@@ -400,15 +402,14 @@ def play(moves):
     for move in valid_moves[1:]:
         score = minmax_start(boards, move);
         if score > best_move_score:
-            print_move(move)
-            print(score)
             best_move_score = score;
             best_move = move;
     our_move = best_move;
 
-    if PRINT_AND_WAIT_FOR_OK_EACH_TURN:
-        print('our move: ', end='');
-        print_move(our_move);
+    if PRINT_CHOSEN_MOVE:
+        print(f'move #{len(moves)+1}: [{our_move.to_string()}] score: [{best_move_score}]');
+
+    if WAIT_FOR_OK_EACH_TURN:
         input('press enter to continue.');
     return our_move;
 
@@ -479,12 +480,6 @@ def evaluate(boards):
 
     return weighted_eval(boards)
 
-
-    
-    
-        
-
-
 # -------------------------------------- #
 # main
 # -------------------------------------- #
@@ -500,6 +495,7 @@ def main():
         if state == WongtronState.WAITING_FOR_OPP_TURN:
             if not file_present(NAME + '.go'):
                 state = WongtronState.WAITING_FOR_TURN;
+                print('waiting for opp')
             else:
                 sleep(WAIT_REFRESH_SECONDS);
 
@@ -508,16 +504,18 @@ def main():
             if file_present(NAME + '.go'):
                 state = WongtronState.PLAYING;
             else:
-                print('waiting')
                 sleep(WAIT_REFRESH_SECONDS);
 
         # play our turn 
         elif state == WongtronState.PLAYING:
             moves += parse_new_moves(moves);
+            print('calculating next move')
             our_move = play(moves);
             moves.append(our_move);
+            sleep(MOVE_DELAY_SECONDS);
             write_move(our_move);
             state = WongtronState.WAITING_FOR_OPP_TURN;
+            print('waiting for ref')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
