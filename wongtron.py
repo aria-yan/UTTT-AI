@@ -15,21 +15,22 @@ MOVE_FILENAME = 'move_file';
 WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
 WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
-MINMAX_DEPTH_LIMIT = 2;
+MINMAX_DEPTH_LIMIT = 3;
 W_SCORE =  1000;
 L_SCORE = -1000;
+THINKING_TIME = 9;
 
 #dev controls
 PRINT_CHOSEN_MOVE = True;
 WAIT_FOR_OK_EACH_TURN = False;
 
-MOVE_DELAY_SECONDS = 1; # time to wait before writing a calculated move (debugging purposes, should be 0 during tournament)
+MOVE_DELAY_SECONDS = 0; # time to wait before writing a calculated move (debugging purposes, should be 0 during tournament)
 
 # -------------------------------------- #
 # imports
 # -------------------------------------- #
 
-from time import sleep
+from time import sleep, time
 from enum import Enum
 import argparse
 import os
@@ -343,11 +344,15 @@ def eval(boards):
 def mm_wongtron_move(depth):
     return depth % 2 == 0; # TODO double check this
 
-def minmax(boards, last_move, depth, levels_dominant_score):
+def minmax(boards, last_move, deadline, depth, levels_dominant_score):
     result_boards = apply_move(boards, last_move);
+
+    #  check time
+    if time() > deadline:
+        return L_SCORE;
     
     #  win
-    if wongtron_global_win(boards):
+    elif wongtron_global_win(boards):
         return W_SCORE;
 
     #  loss
@@ -363,7 +368,7 @@ def minmax(boards, last_move, depth, levels_dominant_score):
         possible_moves = find_valid_moves(boards, last_move)
 
         dominant_move = possible_moves[0];
-        dominant_score = minmax(result_boards, dominant_move, depth + 1, None);
+        dominant_score = minmax(result_boards, dominant_move, deadline, depth + 1, None);
         for move in possible_moves[1:]:
 
             # pruning: return if the levels dominant score leaves this branch unusable # TODO double check this
@@ -373,7 +378,7 @@ def minmax(boards, last_move, depth, levels_dominant_score):
                 if (not mm_wongtron_move(depth) and dominant_score > levels_dominant_score): # opp will select a previous branch
                     break;
             
-            score = minmax(result_boards, move, depth + 1, dominant_score);
+            score = minmax(result_boards, move, deadline, depth + 1, dominant_score);
 
             # check if score dominates
             if (mm_wongtron_move(depth) and score < dominant_score) or (not mm_wongtron_move(depth) and score > dominant_score): # TODO double check this
@@ -383,10 +388,10 @@ def minmax(boards, last_move, depth, levels_dominant_score):
     return dominant_score;
 
 # minmax call for the next wongtron move
-def minmax_start(boards, next_wongtron_move_candidate):
-    return minmax(boards, next_wongtron_move_candidate, 0, None); # TODO double check this
+def minmax_start(boards, next_wongtron_move_candidate, deadline):
+    return minmax(boards, next_wongtron_move_candidate, deadline, 0, None); # TODO double check this
 
-def play(moves):
+def play(moves, deadline):
     our_move = None;
     #generate board from moves
     boards = init_boards();
@@ -397,10 +402,10 @@ def play(moves):
     valid_moves = find_valid_moves(boards, last_move);
     
     best_move = valid_moves[0];
-    best_move_score = minmax_start(boards, best_move);
+    best_move_score = minmax_start(boards, best_move, deadline);
 
     for move in valid_moves[1:]:
-        score = minmax_start(boards, move);
+        score = minmax_start(boards, move, deadline);
         if score > best_move_score:
             best_move_score = score;
             best_move = move;
@@ -509,8 +514,9 @@ def main():
         # play our turn 
         elif state == WongtronState.PLAYING:
             moves += parse_new_moves(moves);
+            deadline = time() + THINKING_TIME;
             print('calculating next move')
-            our_move = play(moves);
+            our_move = play(moves, deadline);
             moves.append(our_move);
             sleep(MOVE_DELAY_SECONDS);
             write_move(our_move);
