@@ -218,6 +218,8 @@ def check_win_local(board):
 
 #returns the # of wongtron cells, opp cells, or empty cells in a WINNING_LINE
 def count_cells_in_line(line, board): 
+    # print(str(line[0])+str(line[1])+str(line[2]))
+    # print(str(board[line[0]])+str(board[line[1]])+str(board[line[2]]))
     board_line = [board[line[0]], board[line[1]], board[line[2]]]
     wong = board_line.count(CellState.WONG)
     opp = board_line.count(CellState.OPP)
@@ -240,7 +242,7 @@ def is_local_win(board, move):
     global WINNING_LINES
     for line in WINNING_LINES:
         if move in line: 
-            wong, opp = count_cells_in_line(board, line)
+            wong, opp = count_cells_in_line(line, board)
             #if 2 cells in the line are wong, 3rd is empty and is the move
             if wong == 2: return True
     return False
@@ -249,7 +251,7 @@ def is_local_two_in_a_row(board, move):
     global WINNING_LINES
     for line in WINNING_LINES:
         if move in line: 
-            wong, opp = count_cells_in_line(board, line)
+            wong, opp = count_cells_in_line(line, board)
             #1 current wong, no opp in line
             if wong == 1 and opp == 0: return True
     return False
@@ -258,7 +260,7 @@ def is_local_block(board, move):
     global WINNING_LINES
     for line in WINNING_LINES:
         if move in line: 
-            wong, opp = count_cells_in_line(board, line)
+            wong, opp = count_cells_in_line(line, board)
             #2 current opp, move would block line
             if opp == 2: return True
     return False
@@ -354,7 +356,7 @@ def minmax(boards, last_move, depth, levels_dominant_score):
 
     # depth reached 
     elif depth > MINMAX_DEPTH_LIMIT:
-        return eval(result_boards);
+        return evaluate(result_boards);
 
     # gen new moves, minmax on each, prune 
     else:
@@ -396,10 +398,13 @@ def play(moves):
     
     best_move = valid_moves[0];
     best_move_score = minmax_start(boards, best_move);
+    print("in play")
 
     for move in valid_moves[1:]:
         score = minmax_start(boards, move);
         if score > best_move_score:
+            print_move(move)
+            print(score)
             best_move_score = score;
             best_move = move;
     our_move = best_move;
@@ -468,7 +473,7 @@ def weighted_eval(boards):
     return sum(list(filter(lambda x: (x),board_calcs)))
 
 
-def evaluate (boards):
+def evaluate(boards):
     
     if (check_win_global(boards)[0] and check_win_global(boards)[1] == "WONG"):
         return 10000
