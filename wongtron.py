@@ -319,15 +319,34 @@ def play(moves):
 # -------------------------------------- #
 
 # TO-DO ADD weights
+def calculate_weight(boards):
+    weights = []
+    
+    for board in range(9):
+        
+        win_local = check_win_local(boards[board])
 
-def simple_eval(board):
+        if(is_global_two_in_a_row(boards,(boards, boards[board]))):
+            weights.append(0.9)
+        elif(is_global_block(boards,(boards, boards[board]))):
+            weights.append(0.7)
+        elif(win_local[1]):
+            weights.append(0.45)
+        else:
+            weights.append(1.2)
+
+    return weights
+
+def simple_eval(board,board_weights):
     
     #Check if we are in a finished board
-    if (check_win_local(board)[0] and check_win_local(board)[1] == "WONG"):
+    local_win = check_win_local(board)
+
+    if (local_win[0] and local_win[1] == "WONG"):
         return 20
-    if (check_win_local(board)[0] and check_win_local(board)[1] == "OPP"):
+    if (local_win[0] and local_win[1] == "OPP"):
         return -10
-    if (check_win_local(board)[0] and check_win_local(board)[1] == "DRAW"):
+    if (local_win[0] and local_win[1] == "DRAW"):
         return 0 
         
     square_calcs = []
@@ -337,54 +356,45 @@ def simple_eval(board):
         if (board[square] == CellState.EMPTY):
             
             if (is_local_win(board, square)):
-                square_calcs.append(5)
-            
+                square_calcs.append(5)*board_weights[square]
             elif (is_local_block(board,square)):
-                square_calcs.append(4)
-            
+                square_calcs.append(4)*board_weights[square]
             elif (is_local_two_in_a_row(board,square)):
-                square_calcs.append(3)
-            
+                square_calcs.append(3)*board_weights[square]
             else:
                 if(square in CellType.EDGE):
-                    square_calcs.append(1)
+                    square_calcs.append(1)*board_weights[square]
                 elif(square in CellType.CORNER):
-                    square_calcs.append(0.75)
+                    square_calcs.append(0.75)*board_weights[square]
                 else:
-                    square_calcs.append(0.5)
+                    square_calcs.append(0.5)*board_weights[square]
 
         else:
             square_calcs.append(0)
-            
-        
-        
-            
+
     return sum(list(filter(lambda x: (x),square_calcs)))
 
 
 def weighted_eval(boards):
     
-    board_calcs = []
+    board_eval = []
+    board_weights = calculate_weight()
     
-    for board in boards:
-        board_calcs.append(simple_eval(board))
+    for board in range(9):
+        board_eval.append(simple_eval(boards[board],board_weights))
 
-    return sum(list(filter(lambda x: (x),board_calcs)))
+    return sum(list(filter(lambda x: (x),board_eval)))
 
 
 def evaluate (boards):
     
-    if (check_win_global(boards)[0] and check_win_global(boards)[1] == "WONG"):
+    global_win = check_win_global(boards)
+    if (global_win[0] and global_win(boards)[1] == "WONG"):
         return 10000
-    if (check_win_global(boards)[0] and check_win_global(boards)[1] == "OPP"):
+    if (global_win[0] and global_win[1] == "OPP"):
         return -10000
 
     return weighted_eval(boards)
-
-
-    
-    
-        
 
 
 # -------------------------------------- #
