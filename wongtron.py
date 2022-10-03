@@ -15,7 +15,7 @@ MOVE_FILENAME = 'move_file';
 WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
 WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
-MINMAX_DEPTH_LIMIT = 5;
+MINMAX_DEPTH_LIMIT = 2;
 W_SCORE =  1000;
 L_SCORE = -1000;
 
@@ -82,12 +82,24 @@ def init_boards():
         boards.append(init_classic_board());
     return boards;
 
-# apply the given move object to the given boards
+# deep copy a given ultimate board, return copy
+def copy_boards(boards):
+    new_boards = [];
+    for board_num, board in enumerate(boards):
+        new_boards.append([]);
+        for cell in board:
+            new_boards[board_num].append(cell);
+    return new_boards;
+
+# returns a new ultimate board with the given move applied
 def apply_move(boards, move):
-   board_number = move.board_number;
-   cell_number = move.cell_number;
-   cell_state = CellState.WONG if move.wongtron else CellState.OPP;
-   boards[board_number][cell_number] = cell_state;
+    # copy board
+    new_boards = copy_boards(boards);
+    board_number = move.board_number;
+    cell_number = move.cell_number;
+    cell_state = CellState.WONG if move.wongtron else CellState.OPP;
+    new_boards[board_number][cell_number] = cell_state;
+    return new_boards;
 
 # -------------------------------------- #
 # file IO functions
@@ -214,8 +226,12 @@ def count_cells_in_line(line, board):
 #same as above but boards instead of cells
 def count_boards_in_line(line, boards): 
     boards_line = map(check_win_local, [boards[line[0]], boards[line[1]], boards[line[2]]])
-    wong = boards_line.count([True, "WONG"])
-    opp = boards_line.count([True, "OPP"])
+    wong, opp = 0, 0;
+    for local_result in boards_line:
+        if local_result[0] == True and local_result[1] == "WONG":
+            wong += 1;
+        if local_result[0] == True and local_result[1] == "OPP":
+            opp += 1;
     return wong, opp
 
 #move check functions assume moves are wongtron's moves and are occuring on empty cells
@@ -366,14 +382,14 @@ def minmax(boards, last_move, depth, levels_dominant_score):
 
 # minmax call for the next wongtron move
 def minmax_start(boards, next_wongtron_move_candidate):
-    minmax(boards, next_wongtron_move_candidate, 0, None); # TODO double check this
+    return minmax(boards, next_wongtron_move_candidate, 0, None); # TODO double check this
 
 def play(moves):
     our_move = None;
     #generate board from moves
     boards = init_boards();
     for move in moves:
-        apply_move(boards, move);
+        boards = apply_move(boards, move);
 
     last_move = moves[-1];
     valid_moves = find_valid_moves(boards, last_move);
