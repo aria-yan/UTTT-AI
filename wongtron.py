@@ -526,8 +526,12 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--name', type=str)
+    parser.add_argument('--depth', type=int)
+    parser.add_argument('--time', type=int)
     args = parser.parse_args();
 
     if args.name is not None: NAME = args.name;
+    if args.depth is not None: MINMAX_DEPTH_LIMIT = args.depth;
+    if args.time is not None: THINKING_TIME = args.time;
 
     main();
