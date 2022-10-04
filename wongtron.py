@@ -452,18 +452,18 @@ def simple_eval(board,board_weights):
         if (board[square] == CellState.EMPTY):
             
             if (is_local_win(board, square)):
-                square_calcs.append(5)*board_weights[square]
+                square_calcs.append(5*board_weights[square])
             elif (is_local_block(board,square)):
-                square_calcs.append(4)*board_weights[square]
+                square_calcs.append(4*board_weights[square])
             elif (is_local_two_in_a_row(board,square)):
-                square_calcs.append(3)*board_weights[square]
+                square_calcs.append(3*board_weights[square])
             else:
                 if(square in CellType.EDGE):
-                    square_calcs.append(1)*board_weights[square]
+                    square_calcs.append(1*board_weights[square])
                 elif(square in CellType.CORNER):
-                    square_calcs.append(0.75)*board_weights[square]
+                    square_calcs.append(0.75*board_weights[square])
                 else:
-                    square_calcs.append(0.5)*board_weights[square]
+                    square_calcs.append(0.5*board_weights[square])
 
         else:
             square_calcs.append(0)
