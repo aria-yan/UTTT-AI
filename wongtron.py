@@ -15,10 +15,11 @@ MOVE_FILENAME = 'move_file';
 WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
 WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
-MINMAX_DEPTH_LIMIT = 2;
+MINMAX_DEPTH_LIMIT = 4;
 W_SCORE =  1000;
 L_SCORE = -1000;
 TIE_SCORE = 0;
+INVALID_SCORE = -333555777999;
 THINKING_TIME = 9;
 LOG_DIRECTORY = './'
 
@@ -389,7 +390,7 @@ def minmax(boards, last_move, deadline, depth, levels_dominant_score):
 
     #  check time
     if time() > deadline:
-        return L_SCORE;
+        return INVALID_SCORE;
     
     #  win
     elif wongtron_global_win(result_boards):
@@ -404,7 +405,7 @@ def minmax(boards, last_move, deadline, depth, levels_dominant_score):
         return TIE_SCORE;
 
     # depth reached 
-    elif depth > MINMAX_DEPTH_LIMIT:
+    elif depth >= MINMAX_DEPTH_LIMIT:
         return evaluate(result_boards);
 
     # gen new moves, minmax on each, prune 
@@ -425,7 +426,8 @@ def minmax(boards, last_move, deadline, depth, levels_dominant_score):
             score = minmax(result_boards, move, deadline, depth + 1, dominant_score);
 
             # check if score dominates
-            if (mm_wongtron_move(depth) and score < dominant_score) or (not mm_wongtron_move(depth) and score > dominant_score): # TODO double check this
+            if (score != INVALID_SCORE and 
+                (mm_wongtron_move(depth) and score < dominant_score) or (not mm_wongtron_move(depth) and score > dominant_score)): # TODO double check this
                 dominant_score = score;
                 dominant_move = move;
     
