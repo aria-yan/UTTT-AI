@@ -186,8 +186,12 @@ def parse_new_moves(moves):
 
 #write given move to move file
 def write_move(move):
-    move_file = open(MOVE_FILENAME, "w");
-    move_file.write(NAME+" "+str(move.board_number)+" "+str(move.cell_number)+"\n");
+    file = open(MOVE_FILENAME, 'r+')
+    file.seek(0)
+    file.write(NAME+" "+str(move.board_number)+" "+str(move.cell_number)+"\n");
+    file.truncate()
+    file.close()
+    
 
 # -------------------------------------- #
 # logging functions
@@ -298,30 +302,30 @@ def is_local_block(board, move):
     return False
 
 #move is (global, local) tuple
-def is_global_win(boards, move):
+def is_global_win(boards, board):
     global WINNING_LINES
     #move does not win local board
-    if not is_local_win(boards[move[0]], move[1]): return False
     for line in WINNING_LINES:
-        if move[0] in line:
+        if board in line:
             wong, opp = count_boards_in_line(line, boards)
             if wong == 2: return True
+    return False
     
-def is_global_two_in_a_row(boards, move):
+def is_global_two_in_a_row(boards, board):
     global WINNING_LINES
-    if not is_local_win(boards[move[0]], move[1]): return False
     for line in WINNING_LINES:
-        if move[0] in line:
+        if board in line:
             wong, opp = count_boards_in_line(line, boards)
             if wong == 1 and opp == 0: return True
+    return False
 
-def is_global_block(boards, move):
+def is_global_block(boards, board):
     global WINNING_LINES
-    if not is_local_win(boards[move[0]], move[1]): return False
     for line in WINNING_LINES:
-        if move[0] in line:
+        if board in line:
             wong, opp = count_boards_in_line(line, boards)
             if opp == 2: return True
+    return False
 
 #winning lines based on player, if 0, board is dead
 def local_winning_lines(board, player):
@@ -461,11 +465,11 @@ def calculate_weight(boards):
         
         win_local = check_win_local(boards[board])
 
-        if(is_global_two_in_a_row(boards,(boards, boards[board]))):
+        if(is_global_two_in_a_row(boards, board)):
             weights.append(0.9)
-        elif(is_global_block(boards,(boards, boards[board]))):
+        elif(is_global_block(boards,board)):
             weights.append(0.7)
-        elif(win_local[1]):
+        elif(not win_local[0]):
             weights.append(0.45)
         else:
             weights.append(1.2)
@@ -498,9 +502,9 @@ def simple_eval(board,board_weights):
                 square_calcs.append(3*board_weights[square])
             else:
             
-                if(square in CellType.EDGE):
+                if(square in CellType.EDGE.value):
                     square_calcs.append(1*board_weights[square])
-                elif(square in CellType.CORNER):
+                elif(square in CellType.CORNER.value):
                     square_calcs.append(0.75*board_weights[square])
                 else:
                     square_calcs.append(0.5*board_weights[square])
@@ -514,7 +518,7 @@ def simple_eval(board,board_weights):
 def weighted_eval(boards):
     
     board_eval = []
-    board_weights = calculate_weight()
+    board_weights = calculate_weight(boards)
     
     for board in range(9):
         board_eval.append(simple_eval(boards[board],board_weights))
@@ -525,7 +529,7 @@ def weighted_eval(boards):
 def evaluate(boards):
     
     global_win = check_win_global(boards)
-    if (global_win[0] and global_win(boards)[1] == "WONG"):
+    if (global_win[0] and global_win[1] == "WONG"):
         return 10000
     if (global_win[0] and global_win[1] == "OPP"):
         return -10000
