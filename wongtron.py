@@ -15,19 +15,22 @@ MOVE_FILENAME = 'move_file';
 WAIT_REFRESH_SECONDS = 0.1;
 NAME = 'wongtron';
 WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
-MINMAX_DEPTH_LIMIT = 2;
+MINMAX_DEPTH_LIMIT = 3;
 W_SCORE =  1000;
 L_SCORE = -1000;
+THINKING_TIME = 9;
 
 #dev controls
-PRINT_AND_WAIT_FOR_OK_EACH_TURN = True;
+PRINT_CHOSEN_MOVE = True;
+WAIT_FOR_OK_EACH_TURN = False;
+
+MOVE_DELAY_SECONDS = 0; # time to wait before writing a calculated move (debugging purposes, should be 0 during tournament)
 
 # -------------------------------------- #
 # imports
 # -------------------------------------- #
 
-from email.base64mime import body_encode
-from time import sleep
+from time import sleep, time
 from enum import Enum
 import argparse
 import os
@@ -63,6 +66,10 @@ class Move():
         self.wongtron = wongtron;
         self.board_number = board;
         self.cell_number = cell;
+
+    def to_string(self):
+        player_string = NAME if self.wongtron else 'opp';
+        return f'{player_string} {self.board_number} {self.cell_number}';
 
 # -------------------------------------- #
 # board functions
@@ -123,8 +130,8 @@ def either_go_file_present():
 
     # wait till move file and one of the go files exists
 def wait_for_initial_game_files():
+    print('waiting for initial game files...')
     while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
-        print('waiting for initial game files')
         sleep(WAIT_REFRESH_SECONDS);
 
 def parse_pregame_moves():
@@ -175,10 +182,6 @@ def write_move(move):
 # -------------------------------------- #
 # printing functions
 # -------------------------------------- #
-
-def print_move(move):
-    player_string = 'wongtron' if move.wongtron else 'opp';
-    print(f'{player_string} {move.board_number} {move.cell_number}');
 
 # -------------------------------------- #
 # play functions
@@ -240,7 +243,7 @@ def is_local_win(board, move):
     global WINNING_LINES
     for line in WINNING_LINES:
         if move in line: 
-            wong, opp = count_cells_in_line(board, line)
+            wong, opp = count_cells_in_line(line, board)
             #if 2 cells in the line are wong, 3rd is empty and is the move
             if wong == 2: return True
     return False
@@ -249,7 +252,7 @@ def is_local_two_in_a_row(board, move):
     global WINNING_LINES
     for line in WINNING_LINES:
         if move in line: 
-            wong, opp = count_cells_in_line(board, line)
+            wong, opp = count_cells_in_line(line, board)
             #1 current wong, no opp in line
             if wong == 1 and opp == 0: return True
     return False
@@ -258,7 +261,7 @@ def is_local_block(board, move):
     global WINNING_LINES
     for line in WINNING_LINES:
         if move in line: 
-            wong, opp = count_cells_in_line(board, line)
+            wong, opp = count_cells_in_line(line, board)
             #2 current opp, move would block line
             if opp == 2: return True
     return False
@@ -341,11 +344,15 @@ def eval(boards):
 def mm_wongtron_move(depth):
     return depth % 2 == 0; # TODO double check this
 
-def minmax(boards, last_move, depth, levels_dominant_score):
+def minmax(boards, last_move, deadline, depth, levels_dominant_score):
     result_boards = apply_move(boards, last_move);
+
+    #  check time
+    if time() > deadline:
+        return L_SCORE;
     
     #  win
-    if wongtron_global_win(boards):
+    elif wongtron_global_win(boards):
         return W_SCORE;
 
     #  loss
@@ -354,14 +361,14 @@ def minmax(boards, last_move, depth, levels_dominant_score):
 
     # depth reached 
     elif depth > MINMAX_DEPTH_LIMIT:
-        return eval(result_boards);
+        return evaluate(result_boards);
 
     # gen new moves, minmax on each, prune 
     else:
         possible_moves = find_valid_moves(boards, last_move)
 
         dominant_move = possible_moves[0];
-        dominant_score = minmax(result_boards, dominant_move, depth + 1, None);
+        dominant_score = minmax(result_boards, dominant_move, deadline, depth + 1, None);
         for move in possible_moves[1:]:
 
             # pruning: return if the levels dominant score leaves this branch unusable # TODO double check this
@@ -371,7 +378,7 @@ def minmax(boards, last_move, depth, levels_dominant_score):
                 if (not mm_wongtron_move(depth) and dominant_score > levels_dominant_score): # opp will select a previous branch
                     break;
             
-            score = minmax(result_boards, move, depth + 1, dominant_score);
+            score = minmax(result_boards, move, deadline, depth + 1, dominant_score);
 
             # check if score dominates
             if (mm_wongtron_move(depth) and score < dominant_score) or (not mm_wongtron_move(depth) and score > dominant_score): # TODO double check this
@@ -381,10 +388,10 @@ def minmax(boards, last_move, depth, levels_dominant_score):
     return dominant_score;
 
 # minmax call for the next wongtron move
-def minmax_start(boards, next_wongtron_move_candidate):
-    return minmax(boards, next_wongtron_move_candidate, 0, None); # TODO double check this
+def minmax_start(boards, next_wongtron_move_candidate, deadline):
+    return minmax(boards, next_wongtron_move_candidate, deadline, 0, None); # TODO double check this
 
-def play(moves):
+def play(moves, deadline):
     our_move = None;
     #generate board from moves
     boards = init_boards();
@@ -395,18 +402,19 @@ def play(moves):
     valid_moves = find_valid_moves(boards, last_move);
     
     best_move = valid_moves[0];
-    best_move_score = minmax_start(boards, best_move);
+    best_move_score = minmax_start(boards, best_move, deadline);
 
     for move in valid_moves[1:]:
-        score = minmax_start(boards, move);
+        score = minmax_start(boards, move, deadline);
         if score > best_move_score:
             best_move_score = score;
             best_move = move;
     our_move = best_move;
 
-    if PRINT_AND_WAIT_FOR_OK_EACH_TURN:
-        print('our move: ', end='');
-        print_move(our_move);
+    if PRINT_CHOSEN_MOVE:
+        print(f'move #{len(moves)+1}: [{our_move.to_string()}] score: [{best_move_score}]');
+
+    if WAIT_FOR_OK_EACH_TURN:
         input('press enter to continue.');
     return our_move;
 
@@ -458,6 +466,7 @@ def simple_eval(board,board_weights):
             elif (is_local_two_in_a_row(board,square)):
                 square_calcs.append(3*board_weights[square])
             else:
+            
                 if(square in CellType.EDGE):
                     square_calcs.append(1*board_weights[square])
                 elif(square in CellType.CORNER):
@@ -482,7 +491,7 @@ def weighted_eval(boards):
     return sum(list(filter(lambda x: (x),board_eval)))
 
 
-def evaluate (boards):
+def evaluate(boards):
     
     global_win = check_win_global(boards)
     if (global_win[0] and global_win(boards)[1] == "WONG"):
@@ -491,6 +500,7 @@ def evaluate (boards):
         return -10000
 
     return weighted_eval(boards)
+
 
 
 # -------------------------------------- #
@@ -508,6 +518,7 @@ def main():
         if state == WongtronState.WAITING_FOR_OPP_TURN:
             if not file_present(NAME + '.go'):
                 state = WongtronState.WAITING_FOR_TURN;
+                print('waiting for opp')
             else:
                 sleep(WAIT_REFRESH_SECONDS);
 
@@ -516,22 +527,29 @@ def main():
             if file_present(NAME + '.go'):
                 state = WongtronState.PLAYING;
             else:
-                print('waiting')
                 sleep(WAIT_REFRESH_SECONDS);
 
         # play our turn 
         elif state == WongtronState.PLAYING:
             moves += parse_new_moves(moves);
-            our_move = play(moves);
+            deadline = time() + THINKING_TIME;
+            print('calculating next move')
+            our_move = play(moves, deadline);
             moves.append(our_move);
+            sleep(MOVE_DELAY_SECONDS);
             write_move(our_move);
             state = WongtronState.WAITING_FOR_OPP_TURN;
+            print('waiting for ref')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--name', type=str)
+    parser.add_argument('--depth', type=int)
+    parser.add_argument('--time', type=int)
     args = parser.parse_args();
 
     if args.name is not None: NAME = args.name;
+    if args.depth is not None: MINMAX_DEPTH_LIMIT = args.depth;
+    if args.time is not None: THINKING_TIME = args.time;
 
     main();
