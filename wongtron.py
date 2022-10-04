@@ -18,6 +18,7 @@ WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]
 MINMAX_DEPTH_LIMIT = 3;
 W_SCORE =  1000;
 L_SCORE = -1000;
+TIE_SCORE = 0;
 THINKING_TIME = 9;
 LOG_DIRECTORY = './'
 
@@ -242,6 +243,10 @@ def opp_global_win(boards):
     check_result = check_win_global(boards);
     return check_result[0] and check_result[1] == "OPP"; # TODO write test case for this
 
+def global_tie(boards):
+    check_result = check_win_global(boards);
+    return check_result[0] and check_result[1] == "DRAW";
+
 #returns True if board is done and winner of finished board
 def check_win_local(board):
     global WINNING_LINES
@@ -387,12 +392,16 @@ def minmax(boards, last_move, deadline, depth, levels_dominant_score):
         return L_SCORE;
     
     #  win
-    elif wongtron_global_win(boards):
+    elif wongtron_global_win(result_boards):
         return W_SCORE;
 
     #  loss
-    elif opp_global_win(boards):
+    elif opp_global_win(result_boards):
         return L_SCORE;
+
+    #  tie
+    elif global_tie(result_boards):
+        return TIE_SCORE;
 
     # depth reached 
     elif depth > MINMAX_DEPTH_LIMIT:
@@ -400,7 +409,7 @@ def minmax(boards, last_move, deadline, depth, levels_dominant_score):
 
     # gen new moves, minmax on each, prune 
     else:
-        possible_moves = find_valid_moves(boards, last_move)
+        possible_moves = find_valid_moves(result_boards, last_move)
 
         dominant_move = possible_moves[0];
         dominant_score = minmax(result_boards, dominant_move, deadline, depth + 1, None);
@@ -541,6 +550,20 @@ def evaluate(boards):
 # -------------------------------------- #
 # main
 # -------------------------------------- #
+
+def boards_string(boards):
+    s = '';
+    for board_num, board in enumerate(boards):
+        s += str(board_num) + ':\n'
+        for i in range(3):
+            for j in range(3):
+                cell = board[3*i + j];
+                if cell == CellState.WONG: s += 'W';
+                if cell == CellState.OPP: s += 'O';
+                if cell == CellState.EMPTY: s += '.';
+                s += ' | ';
+            s += '\n';
+    return s;
 
 def main():
     # init log
