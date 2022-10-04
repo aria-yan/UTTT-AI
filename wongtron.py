@@ -19,6 +19,7 @@ MINMAX_DEPTH_LIMIT = 3;
 W_SCORE =  1000;
 L_SCORE = -1000;
 THINKING_TIME = 9;
+LOG_DIRECTORY = './'
 
 #dev controls
 PRINT_CHOSEN_MOVE = True;
@@ -32,7 +33,9 @@ MOVE_DELAY_SECONDS = 0; # time to wait before writing a calculated move (debuggi
 
 from time import sleep, time
 from enum import Enum
+import datetime
 import argparse
+import sys
 import os
 
 # -------------------------------------- #
@@ -130,7 +133,7 @@ def either_go_file_present():
 
     # wait till move file and one of the go files exists
 def wait_for_initial_game_files():
-    print('waiting for initial game files...')
+    log('waiting for initial game files...')
     while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
         sleep(WAIT_REFRESH_SECONDS);
 
@@ -142,15 +145,18 @@ def parse_pregame_moves():
     with open(PREGAME_MOVES_FILENAME) as f:
         move_lines = f.readlines();
     for i, line in enumerate(move_lines):
-        split_move_line = line.split();
-        board_num = int(split_move_line[1]);
-        cell_num = int(split_move_line[2]);
-        player = split_move_line[0];
+        try:
+            split_move_line = line.split();
+            board_num = int(split_move_line[1]);
+            cell_num = int(split_move_line[2]);
+            player = split_move_line[0];
 
-        # this move begins to wong if wong is first turn and this is the first or third pregame move
-        wongs_move = player == NAME;
-        
-        moves.append(Move(wongs_move, board_num, cell_num));
+            # this move begins to wong if wong is first turn and this is the first or third pregame move
+            wongs_move = player == NAME;
+            
+            moves.append(Move(wongs_move, board_num, cell_num));
+        except Exception as e:
+            log(f"ERROR {e} while parsing pre-game move: {line}")
 
     return moves;
 
@@ -161,12 +167,16 @@ def parse_move_file():
     with open(MOVE_FILENAME) as f:
         move_lines = f.readlines();
     for i, line in enumerate(move_lines):
-        split_move_line = line.split();
-        wongs_move = split_move_line[0] == NAME;
-        board_num = int(split_move_line[1]);
-        cell_num = int(split_move_line[2]);
+        try:
+            split_move_line = line.split();
+            wongs_move = split_move_line[0] == NAME;
+            board_num = int(split_move_line[1]);
+            cell_num = int(split_move_line[2]);
+            
+            moves.append(Move(wongs_move, board_num, cell_num));
         
-        moves.append(Move(wongs_move, board_num, cell_num));
+        except Exception as e:
+            log(f'ERROR {e} when parsing move file line: {line}');
 
     return moves;
 
@@ -180,8 +190,29 @@ def write_move(move):
     move_file.write(NAME+" "+str(move.board_number)+" "+str(move.cell_number)+"\n");
 
 # -------------------------------------- #
-# printing functions
+# logging functions
 # -------------------------------------- #
+
+def log_filepath():
+    return LOG_DIRECTORY + NAME + '-log.txt';
+
+def initial_log():
+    date_string = datetime.date.today().strftime("%m/%d/%y");
+    with open(log_filepath(), 'w') as logfile:
+        logfile.write(f'{NAME} - {date_string}\n');
+
+def log_moves(moves):
+    s = 'parsed moves\n';
+    for move in moves:
+        s += f'[{move.to_string()}]\n';
+    log(s)
+
+def log(msg):
+    print(msg);
+    time_string = datetime.datetime.now().strftime("%H:%M:%S");
+    string_to_log = f'{time_string} - {msg}\n';
+    with open(log_filepath(), 'a') as logfile:
+        logfile.write(string_to_log);
 
 # -------------------------------------- #
 # play functions
@@ -412,7 +443,7 @@ def play(moves, deadline):
     our_move = best_move;
 
     if PRINT_CHOSEN_MOVE:
-        print(f'move #{len(moves)+1}: [{our_move.to_string()}] score: [{best_move_score}]');
+        log(f'move #{len(moves)+1}: [{our_move.to_string()}] score: [{best_move_score}]');
 
     if WAIT_FOR_OK_EACH_TURN:
         input('press enter to continue.');
@@ -490,6 +521,9 @@ def evaluate(boards):
 # -------------------------------------- #
 
 def main():
+    # init log
+    initial_log();
+
     # init game state
     state = WongtronState.WAITING_FOR_TURN;
     wait_for_initial_game_files();
@@ -500,7 +534,7 @@ def main():
         if state == WongtronState.WAITING_FOR_OPP_TURN:
             if not file_present(NAME + '.go'):
                 state = WongtronState.WAITING_FOR_TURN;
-                print('waiting for opp')
+                log('waiting for opp')
             else:
                 sleep(WAIT_REFRESH_SECONDS);
 
@@ -515,19 +549,21 @@ def main():
         elif state == WongtronState.PLAYING:
             moves += parse_new_moves(moves);
             deadline = time() + THINKING_TIME;
-            print('calculating next move')
+            log_moves(moves);
+            log('calculating next move')
             our_move = play(moves, deadline);
             moves.append(our_move);
             sleep(MOVE_DELAY_SECONDS);
             write_move(our_move);
             state = WongtronState.WAITING_FOR_OPP_TURN;
-            print('waiting for ref')
+            log('waiting for ref')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--name', type=str)
     parser.add_argument('--depth', type=int)
     parser.add_argument('--time', type=int)
+    parser.add_argument('--log', type=str)
     args = parser.parse_args();
 
     if args.name is not None: NAME = args.name;
