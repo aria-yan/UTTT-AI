@@ -11,22 +11,22 @@
 # -------------------------------------- #
 
 PREGAME_MOVES_FILENAME = 'first_four_moves';
+END_GAME_FILENAME = 'end_game';
 MOVE_FILENAME = 'move_file';
 WAIT_REFRESH_SECONDS = 0.1;
+LOG_DIRECTORY = './'
 NAME = 'wongtron';
-WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
-MINMAX_DEPTH_LIMIT = 4;
+
+# thinking parameters
+MINMAX_DEPTH_LIMIT = 2;
+THINKING_TIME = 9;
 W_SCORE =  1000;
 L_SCORE = -1000;
 TIE_SCORE = 0;
-INVALID_SCORE = -333555777999;
-THINKING_TIME = 9;
-LOG_DIRECTORY = './'
 
-#dev controls
-PRINT_CHOSEN_MOVE = True;
+# dev controls
 WAIT_FOR_OK_EACH_TURN = False;
-
+PRINT_CHOSEN_MOVE = True;
 MOVE_DELAY_SECONDS = 0; # time to wait before writing a calculated move (debugging purposes, should be 0 during tournament)
 
 # -------------------------------------- #
@@ -37,8 +37,14 @@ from time import sleep, time
 from enum import Enum
 import datetime
 import argparse
-import sys
 import os
+
+# -------------------------------------- #
+# constants
+# -------------------------------------- #
+
+WINNING_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+INVALID_SCORE = -333555777999;
 
 # -------------------------------------- #
 # enums
@@ -61,7 +67,6 @@ class CellType(Enum):
     MIDDLE = [4]
     EDGE = [1,3,5,7]
 
- 
 # -------------------------------------- #
 # board types
 # -------------------------------------- #
@@ -194,7 +199,6 @@ def write_move(move):
     file.truncate()
     file.close()
     
-
 # -------------------------------------- #
 # logging functions
 # -------------------------------------- #
@@ -377,9 +381,6 @@ def find_valid_moves(boards, last_move):
                 valid_moves.append(Move(wongs_turn, last_cell_num, cell_num));
 
     return valid_moves;
-
-def eval(boards):
-    return 1;
 
 # return true if minmax level is a wongtron move
 def mm_wongtron_move(depth):
@@ -577,11 +578,17 @@ def main():
     moves = parse_pregame_moves();
 
     while(True):
+        # check for end game
+        if file_present(END_GAME_FILENAME):
+            log("game over");
+            break;
+
         # wait for referee to remove the wongtron.go file
         if state == WongtronState.WAITING_FOR_OPP_TURN:
             if not file_present(NAME + '.go'):
                 state = WongtronState.WAITING_FOR_TURN;
                 log('waiting for opp')
+                sleep(WAIT_REFRESH_SECONDS);
             else:
                 sleep(WAIT_REFRESH_SECONDS);
 
