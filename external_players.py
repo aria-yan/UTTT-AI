@@ -46,9 +46,6 @@ def external_player(moves, main_board, local_board_num, my_symbol, opponent_symb
     check_time = st + 0.05
     while time.time() < st + time_limit:
         if time.time() > check_time:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    return BAD_MOVE_DRAW, "Game manually terminated!"
             if os.path.getmtime("move_file") > mtime:
                 modified = True
                 break

@@ -17,7 +17,7 @@ from os import listdir
 from os.path import isfile, join
 
 from external_players import get_competitors
-from game import Game
+Game = None;
 
 def clean():
     """
@@ -51,8 +51,14 @@ def main():
     parser.add_argument("player_one", type=str, help="Group name of player one")
     parser.add_argument("player_two", type=str, help="Group name of player two")
     parser.add_argument("--time_limit", type=int, help="Time limit (default 10 seconds)", required=False)
+    parser.add_argument("--headless", action=argparse.BooleanOptionalAction);
     args = parser.parse_args(sys.argv[1:])
 
+    # import the right game
+    if args.headless:
+        from headlessgame import Game;
+    else:
+        from game import Game;
 
     # Select order randomly
     p1 = args.player_one
@@ -81,8 +87,5 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except:
-        print('________________')
+    main()
     clean()
