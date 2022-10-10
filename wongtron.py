@@ -19,14 +19,14 @@ NAME = 'wongtron';
 LOGGING = True;
 
 # thinking parameters
-MINMAX_DEPTH_LIMIT = 4;
+MINMAX_DEPTH_LIMIT = 2;
 THINKING_TIME = 8;
 W_SCORE =  1000;
 L_SCORE = -1000;
 TIE_SCORE = 0;
 
 # dev controls
-WAIT_FOR_OK_EACH_TURN = True;
+WAIT_FOR_OK_EACH_TURN = False;
 PRINT_CHOSEN_MOVE = True;
 MOVE_DELAY_SECONDS = 0; # time to wait before writing a calculated move (debugging purposes, should be 0 during tournament)
 
