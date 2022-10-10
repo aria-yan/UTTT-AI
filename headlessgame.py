@@ -1,5 +1,6 @@
 import numpy as np
 import core_gameplay as gp
+from time import sleep
 
 def nums_output(nums, p1_name, p2_name):
     symbols = [p1_name, p2_name]
@@ -140,3 +141,6 @@ class Game:
         eg.close()
         open("{p}.go".format(p=self.names[0]), "w").close()
         open("{p}.go".format(p=self.names[1]), "w").close()
+        while 1:
+            sleep(1);
+
