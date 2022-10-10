@@ -16,16 +16,17 @@ MOVE_FILENAME = 'move_file';
 WAIT_REFRESH_SECONDS = 0.1;
 LOG_DIRECTORY = './'
 NAME = 'wongtron';
+LOGGING = True;
 
 # thinking parameters
-MINMAX_DEPTH_LIMIT = 2;
-THINKING_TIME = 9;
+MINMAX_DEPTH_LIMIT = 4;
+THINKING_TIME = 8;
 W_SCORE =  1000;
 L_SCORE = -1000;
 TIE_SCORE = 0;
 
 # dev controls
-WAIT_FOR_OK_EACH_TURN = False;
+WAIT_FOR_OK_EACH_TURN = True;
 PRINT_CHOSEN_MOVE = True;
 MOVE_DELAY_SECONDS = 0; # time to wait before writing a calculated move (debugging purposes, should be 0 during tournament)
 
@@ -37,6 +38,7 @@ from time import sleep, time
 from enum import Enum
 import datetime
 import argparse
+import sys
 import os
 
 # -------------------------------------- #
@@ -141,7 +143,7 @@ def either_go_file_present():
     # wait till move file and one of the go files exists
 def wait_for_initial_game_files():
     log('waiting for initial game files...')
-    while not (file_present(MOVE_FILENAME) and either_go_file_present()): 
+    while not (file_present(MOVE_FILENAME) and either_go_file_present() and file_present(PREGAME_MOVES_FILENAME)): 
         sleep(WAIT_REFRESH_SECONDS);
 
 def parse_pregame_moves():
@@ -207,9 +209,10 @@ def log_filepath():
     return LOG_DIRECTORY + NAME + '-log.txt';
 
 def initial_log():
-    date_string = datetime.date.today().strftime("%m/%d/%y");
-    with open(log_filepath(), 'w') as logfile:
-        logfile.write(f'{NAME} - {date_string}\n');
+    if LOGGING:
+        date_string = datetime.date.today().strftime("%m/%d/%y");
+        with open(log_filepath(), 'w') as logfile:
+            logfile.write(f'{NAME} - {date_string}\n');
 
 def log_moves(moves):
     s = 'parsed moves\n';
@@ -218,16 +221,46 @@ def log_moves(moves):
     log(s)
 
 def log(msg):
-    print(msg);
-    time_string = datetime.datetime.now().strftime("%H:%M:%S");
-    string_to_log = f'{time_string} - {msg}\n';
-    with open(log_filepath(), 'a') as logfile:
-        logfile.write(string_to_log);
+    if LOGGING:
+        print(msg);
+        time_string = datetime.datetime.now().strftime("%H:%M:%S");
+        string_to_log = f'{time_string} - {msg}\n';
+        with open(log_filepath(), 'a') as logfile:
+            logfile.write(string_to_log);
 
 # -------------------------------------- #
 # play functions
 # -------------------------------------- #
 
+def verify_move(moves, new_move, print_errors):
+    valid_move = True;
+    boards = init_boards();
+    for move in moves:
+        boards = apply_move(boards, move);
+    
+    last_move = moves[-1];
+    
+    # check that it is in the right place
+    if (new_move.board_number != last_move.cell_number) and not check_win_local(boards[last_move.cell_number])[0]:
+        valid_move = False;
+        if print_errors:
+            print(f'INVALID MOVE: [{new_move.to_string()}] wrong local board')
+
+    # check that it is in a neutral board    
+    elif check_win_local(boards[new_move.board_number])[0]:
+        valid_move = False;
+        if print_errors:
+            print(f'INVALID MOVE: [{new_move.to_string()}] local board already won')
+    
+    # check that cell is empty
+    elif boards[new_move.board_number][new_move.cell_number] != CellState.EMPTY:
+        valid_move = False;
+        if print_errors:
+            print(f'INVALID MOVE: [{new_move.to_string()}] cell occupied')
+
+    return valid_move;
+
+    
 #returns True if game is over and winner of game
 def check_win_global(boards):
     global WINNING_LINES
@@ -439,6 +472,8 @@ def minmax_start(boards, next_wongtron_move_candidate, deadline):
     return minmax(boards, next_wongtron_move_candidate, deadline, 0, None); # TODO double check this
 
 def play(moves, deadline):
+    print('thinking... ', end='');
+    sys.stdout.flush();
     our_move = None;
     #generate board from moves
     boards = init_boards();
@@ -460,6 +495,7 @@ def play(moves, deadline):
 
     if PRINT_CHOSEN_MOVE:
         log(f'move #{len(moves)+1}: [{our_move.to_string()}] score: [{best_move_score}]');
+        print(f'playing move: [{our_move.to_string()}]');
 
     if WAIT_FOR_OK_EACH_TURN:
         input('press enter to continue.');
@@ -554,6 +590,18 @@ def evaluate(boards):
 # main
 # -------------------------------------- #
 
+def end_game_print(moves):
+    moves += parse_new_moves(moves);
+    boards = init_boards();
+    for move in moves:
+        boards = apply_move(boards, move);
+    if wongtron_global_win(boards):
+        print(f"I win! Muahahahahaaaa");
+    elif opp_global_win(boards):
+        print(f"Opponent wins. ):");
+    elif global_tie(boards):
+        print(f"Its a draw.");
+
 def boards_string(boards):
     s = '';
     for board_num, board in enumerate(boards):
@@ -580,6 +628,7 @@ def main():
     while(True):
         # check for end game
         if file_present(END_GAME_FILENAME):
+            end_game_print(moves);
             log("game over");
             break;
 
@@ -601,14 +650,26 @@ def main():
 
         # play our turn 
         elif state == WongtronState.PLAYING:
-            moves += parse_new_moves(moves);
+            # parse and verify moves
+            new_moves = parse_new_moves(moves);
+            if len(new_moves) > 0:
+                verify_move(moves, new_moves[0], True);
+            moves += new_moves;
+
+            # calculate deadline
             deadline = time() + THINKING_TIME;
             log_moves(moves);
             log('calculating next move')
+            
+            # minimax
             our_move = play(moves, deadline);
+
+            # write/store our move
             moves.append(our_move);
             sleep(MOVE_DELAY_SECONDS);
             write_move(our_move);
+
+            # wait for ref
             state = WongtronState.WAITING_FOR_OPP_TURN;
             log('waiting for ref')
 
