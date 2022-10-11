@@ -8,6 +8,7 @@ from enum import Enum
 import subprocess
 import datetime
 import pathlib
+import random
 import shutil
 import sys
 import os
@@ -16,6 +17,7 @@ import os
 W1_NAME = 'w1';
 W2_NAME = 'w2';
 DATA_DIRECTORY = '/arenalog'
+NUM_SUBMATCHES = 3;
 
 # useful constants
 END_GAME_FILENAME = 'end_game';
@@ -95,7 +97,7 @@ class Match():
 
         self.w1.start();
         self.w2.start();
-        ref = subprocess.Popen([sys.executable, 'referee.py', 'w1', 'w2', '--headless']);
+        ref = subprocess.Popen([sys.executable, 'referee.py', self.w1.name, self.w2.name, '--headless']);
 
         while not os.path.isfile(END_GAME_FILENAME):
             sleep(1);
@@ -145,23 +147,38 @@ def log(msg):
 
 def main():
     init_log();
-    for i in range(5):
-        envdir = './';
-        w1 = Wongtron('w1', 2);
-        w2 = Wongtron('w2', 2);
-        match = Match(w1, w2, envdir);
 
-        match.run();
+    winning_depth = 2;
+    while True:
+        # calculate opponents params
+        opposing_depth = winning_depth + 1;
 
-        results = match.match_results_string();
-        log(results);
+        upsets = 0;
+        for submatch_num in range(NUM_SUBMATCHES):
+            # prepare the match
+            envdir = './';
+            w1 = Wongtron('wong', winning_depth);
+            w2 = Wongtron('opp', opposing_depth);
+            match = Match(w1, w2, envdir);
 
-        data_path = os.path.join(DATA_DIRECTORY, f'match-{match.endtime}');
-        while(pathlib.Path(data_path).is_dir()):
-            data_path += '-1';
-        pathlib.Path(data_path).mkdir();
-        shutil.copyfile(os.path.join(envdir, w1.logfilename()), os.path.join(data_path, w1.logfilename()));
-        shutil.copyfile(os.path.join(envdir, w2.logfilename()), os.path.join(data_path, w2.logfilename()));
+            match.run();
+
+            # log match results
+            results = match.match_results_string();
+            log(results);
+            data_path = os.path.join(DATA_DIRECTORY, f'match-{match.endtime}');
+            while(pathlib.Path(data_path).is_dir()):
+                data_path += '-1';
+            pathlib.Path(data_path).mkdir();
+            shutil.copyfile(os.path.join(envdir, w1.logfilename()), os.path.join(data_path, w1.logfilename()));
+            shutil.copyfile(os.path.join(envdir, w2.logfilename()), os.path.join(data_path, w2.logfilename()));
+
+            # count upset
+            if (match.winner and match.winner.name == 'opp'):
+                upsets += 1;
+
+        if upsets == NUM_SUBMATCHES:
+            winning_depth = opposing_depth;
 
 
 if __name__ == "__main__":
