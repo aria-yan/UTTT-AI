@@ -24,6 +24,16 @@ THINKING_TIME = 8;
 W_SCORE =  1000;
 L_SCORE = -1000;
 TIE_SCORE = 0;
+GLOBAL_TWO = 0.9
+GLOBAL_BLOCK = 0.7
+FREE_BOARD = 0.45
+OTHER_BOARD = 1.2
+LOCAL_WIN = 5
+LOCAL_BLOCK = 4
+LOCAL_TWO = 3
+LOCAL_WON = 20
+LOCAL_LOST = -10
+LOCAL_TIED = 0
 
 # dev controls
 WAIT_FOR_OK_EACH_TURN = False;
@@ -392,7 +402,14 @@ def global_winning_lines(boards, player):
         if opp == 0: wong += 1
     if player == "wong": return wonglines
     elif player == "opp": return opplines
-    
+
+#counts useful winning lines a move is a part of
+def count_local_move_winning_lines(move, board):
+    count = 0
+    for line in WINNING_LINES:
+        if (move in line) and (count_cells_in_line(line, board)[1] == 0):
+            count += 1
+    return count
 
 def find_valid_moves(boards, last_move):
     last_cell_num = last_move.cell_number;
@@ -509,19 +526,20 @@ def play(moves, deadline):
 def calculate_weight(boards):
     weights = []
     
+    weights = []
     for board in range(9):
-        
         win_local = check_win_local(boards[board])
-
+        local_lines = local_winning_lines(boards[board])
+        if local_lines[1] == 0: line_ratio = 9
+        else: line_ratio = local_lines[0]/local_lines[1]
         if(is_global_two_in_a_row(boards, board)):
-            weights.append(0.9)
+            weights.append(GLOBAL_TWO*line_ratio)
         elif(is_global_block(boards,board)):
-            weights.append(0.7)
+            weights.append(GLOBAL_BLOCK*line_ratio)
         elif(not win_local[0]):
-            weights.append(0.45)
+            weights.append(FREE_BOARD*line_ratio)
         else:
-            weights.append(1.2)
-
+            weights.append(OTHER_BOARD*line_ratio)
     return weights
 
 def simple_eval(board,board_weights):
@@ -530,11 +548,11 @@ def simple_eval(board,board_weights):
     local_win = check_win_local(board)
 
     if (local_win[0] and local_win[1] == "WONG"):
-        return 20
+        return LOCAL_WON
     if (local_win[0] and local_win[1] == "OPP"):
-        return -10
+        return LOCAL_LOST
     if (local_win[0] and local_win[1] == "DRAW"):
-        return 0 
+        return LOCAL_TIED
         
     square_calcs = []
 
@@ -543,20 +561,13 @@ def simple_eval(board,board_weights):
         if (board[square] == CellState.EMPTY):
             
             if (is_local_win(board, square)):
-                square_calcs.append(5*board_weights[square])
+                square_calcs.append(LOCAL_WIN*board_weights[square])
             elif (is_local_block(board,square)):
-                square_calcs.append(4*board_weights[square])
+                square_calcs.append(LOCAL_BLOCK*board_weights[square])
             elif (is_local_two_in_a_row(board,square)):
-                square_calcs.append(3*board_weights[square])
+                square_calcs.append(LOCAL_TWO*board_weights[square])
             else:
-            
-                if(square in CellType.EDGE.value):
-                    square_calcs.append(1*board_weights[square])
-                elif(square in CellType.CORNER.value):
-                    square_calcs.append(0.75*board_weights[square])
-                else:
-                    square_calcs.append(0.5*board_weights[square])
-
+                square_calcs.append(count_local_move_winning_lines(square, board)*board_weights[square])
         else:
             square_calcs.append(0)
 
@@ -578,9 +589,9 @@ def evaluate(boards):
     
     global_win = check_win_global(boards)
     if (global_win[0] and global_win[1] == "WONG"):
-        return 10000
+        return W_SCORE
     if (global_win[0] and global_win[1] == "OPP"):
-        return -10000
+        return L_SCORE
 
     return weighted_eval(boards)
 
@@ -679,10 +690,36 @@ if __name__ == '__main__':
     parser.add_argument('--depth', type=int)
     parser.add_argument('--time', type=int)
     parser.add_argument('--log', type=str)
+    parser.add_argument('--w_score', type=int)
+    parser.add_argument('--l_score', type=int)
+    parser.add_argument('--tie_score', type=int)
+    parser.add_argument('--global_two', type=int)
+    parser.add_argument('--global_block', type=int)
+    parser.add_argument('--free_board', type=int)
+    parser.add_argument('--other_board', type=int)
+    parser.add_argument('--local_win', type=int)
+    parser.add_argument('--local_block', type=int)
+    parser.add_argument('--local_two', type=int)
+    parser.add_argument('--local_won', type=int)
+    parser.add_argument('--local_lost', type=int)
+    parser.add_argument('--local_tied', type=int)
     args = parser.parse_args();
 
     if args.name is not None: NAME = args.name;
     if args.depth is not None: MINMAX_DEPTH_LIMIT = args.depth;
     if args.time is not None: THINKING_TIME = args.time;
+    if args.w_score is not None: W_SCORE = args.w_score
+    if args.l_score is not None: L_SCORE = args.l_score
+    if args.tie_score is not None: TIE_SCORE = args.tie_Score
+    if args.global_two is not None: GLOBAL_TWO = args.global_two
+    if args.globaL_block is not None: GLOBAL_BLOCK = args.global_block
+    if args.free_board is not None: FREE_BOARD = args.free_board
+    if args.other_board is not None: OTHER_BOARD = args.other_board
+    if args.local_win is not None: LOCAL_WIN = args.local_win
+    if args.local_block is not None: LOCAL_BLOCK = args.local_block
+    if args.local_two is not None: LOCAL_TWO = args.local_two
+    if args.local_won is not None: LOCAL_WON = args.local_won
+    if args.local_lost is not None: LOCAL_LOST = args.local_lost
+    if args.local_tied is not None: LOCAL_TIED = args.local_tied
 
     main();
