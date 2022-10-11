@@ -5,8 +5,9 @@ RUN apt-get update
 RUN apt-get install -y python3 python3-pip
 RUN pip install pygame numpy
 
-# make directory for the biz
+# make directories for the biz
 RUN mkdir /root/wt
+RUN mkdir /root/arenalog
 
 # copy in arena
 COPY arena.py /root/wt
