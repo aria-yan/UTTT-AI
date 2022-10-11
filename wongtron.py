@@ -26,7 +26,7 @@ L_SCORE = -1000;
 TIE_SCORE = 0;
 GLOBAL_TWO = 0.9
 GLOBAL_BLOCK = 0.7
-FREE_BOARD = 0.45
+FREE_BOARD = 0.1
 OTHER_BOARD = 1.2
 LOCAL_WIN = 5
 LOCAL_BLOCK = 4
@@ -34,6 +34,7 @@ LOCAL_TWO = 3
 LOCAL_WON = 20
 LOCAL_LOST = -10
 LOCAL_TIED = 0
+LINE_RATIO_SCALE = 0
 
 # dev controls
 WAIT_FOR_OK_EACH_TURN = False;
@@ -529,16 +530,16 @@ def calculate_weight(boards):
     for board in range(9):
         win_local = check_win_local(boards[board])
         local_lines = local_winning_lines(boards[board])
-        if local_lines[1] == 0: line_ratio = 9
-        else: line_ratio = local_lines[0]/local_lines[1]
+        if local_lines[1] == 0: line_ratio = 8*LINE_RATIO_SCALE
+        else: line_ratio = local_lines[0]/local_lines[1]*LINE_RATIO_SCALE
         if(is_global_two_in_a_row(boards, board)):
-            weights.append(GLOBAL_TWO*line_ratio)
+            weights.append(GLOBAL_TWO+line_ratio)
         elif(is_global_block(boards,board)):
-            weights.append(GLOBAL_BLOCK*line_ratio)
+            weights.append(GLOBAL_BLOCK+line_ratio)
         elif(not win_local[0]):
-            weights.append(FREE_BOARD*line_ratio)
+            weights.append(FREE_BOARD)
         else:
-            weights.append(OTHER_BOARD*line_ratio)
+            weights.append(OTHER_BOARD+line_ratio)
     return weights
 
 def simple_eval(board,board_weights):
@@ -566,7 +567,7 @@ def simple_eval(board,board_weights):
             elif (is_local_two_in_a_row(board,square)):
                 square_calcs.append(LOCAL_TWO*board_weights[square])
             else:
-                square_calcs.append(count_local_move_winning_lines(square, board)*board_weights[square])
+                square_calcs.append(LINE_RATIO_SCALE*count_local_move_winning_lines(square, board)*board_weights[square])
         else:
             square_calcs.append(0)
 
@@ -702,6 +703,7 @@ if __name__ == '__main__':
     parser.add_argument('--local_won', type=int)
     parser.add_argument('--local_lost', type=int)
     parser.add_argument('--local_tied', type=int)
+    parser.add_argument('--line_ratio', type=int)
     args = parser.parse_args();
 
     if args.name is not None: NAME = args.name;
@@ -720,5 +722,6 @@ if __name__ == '__main__':
     if args.local_won is not None: LOCAL_WON = args.local_won
     if args.local_lost is not None: LOCAL_LOST = args.local_lost
     if args.local_tied is not None: LOCAL_TIED = args.local_tied
+    if args.line_ratio is not None: LINE_RATIO_SCALE = args.line_ratio
 
     main();
