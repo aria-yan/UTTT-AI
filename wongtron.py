@@ -710,9 +710,9 @@ if __name__ == '__main__':
     if args.time is not None: THINKING_TIME = args.time;
     if args.w_score is not None: W_SCORE = args.w_score
     if args.l_score is not None: L_SCORE = args.l_score
-    if args.tie_score is not None: TIE_SCORE = args.tie_Score
+    if args.tie_score is not None: TIE_SCORE = args.tie_score
     if args.global_two is not None: GLOBAL_TWO = args.global_two
-    if args.globaL_block is not None: GLOBAL_BLOCK = args.global_block
+    if args.global_block is not None: GLOBAL_BLOCK = args.global_block
     if args.free_board is not None: FREE_BOARD = args.free_board
     if args.other_board is not None: OTHER_BOARD = args.other_board
     if args.local_win is not None: LOCAL_WIN = args.local_win
