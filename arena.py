@@ -2,28 +2,31 @@
 ### BATTLE ARENA
 ###
 
+# imports
+from time import sleep
+from enum import Enum
+import subprocess
+import datetime
+import pathlib
+import shutil
+import sys
+import os
+
 # config
 W1_NAME = 'w1';
 W2_NAME = 'w2';
-DATA_LOG_PATH = './arena-log.txt'
+DATA_DIRECTORY = '/arenalog'
 
 # useful constants
 END_GAME_FILENAME = 'end_game';
 MOVE_FIENAME = 'move_file';
 
 # derived vars
+DATA_LOG_PATH = os.path.join(DATA_DIRECTORY, 'arena-log.txt');
 LOGFILE_ONE = f'{W1_NAME}-log.txt'
 LOGFILE_TWO = f'{W2_NAME}-log.txt'
 GOFILE_ONE = f'{W1_NAME}.go';
 GOFILE_TWO = f'{W2_NAME}.go';
-
-# imports
-from time import sleep
-from enum import Enum
-import subprocess
-import datetime
-import sys
-import os
 
 def clean_env(directorypath):
     # move_file
@@ -73,16 +76,22 @@ class Wongtron():
         if (self.sp):
             self.sp.kill();
 
+    def logfilename(self):
+        return f'{self.name}-log.txt';
+
 class Match():
-    def __init__(self, w1, w2):
-        self.envdir = './';
+    def __init__(self, w1, w2, envdir):
+        self.envdir = envdir;
         self.w1 = w1;
         self.w2 = w2;
         self.winner = None;
         self.endgamemessage = None;
+        self.starttime = None;
+        self.endtime = None;
 
     def run(self):
         clean_env(self.envdir);
+        self.starttime = datetime.datetime.now().strftime("%m-%d-%Y-%H-%M-%S")
 
         self.w1.start();
         self.w2.start();
@@ -94,6 +103,8 @@ class Match():
         self.w1.kill();
         self.w2.kill();
         ref.terminate();
+
+        self.endtime = datetime.datetime.now().strftime("%m-%d-%Y-%H-%M-%S")
 
         winnername = parse_winner(self.envdir)
         if (winnername):
@@ -120,6 +131,11 @@ class Match():
         s += '\n\n';
         return s;
 
+def init_log():
+    if not pathlib.Path(DATA_DIRECTORY).is_dir():
+        pathlib.Path(DATA_DIRECTORY).mkdir(parents=True);
+    log('init arena')
+
 def log(msg):
     print(msg);
     time_string = datetime.datetime.now().strftime("%H:%M:%S");
@@ -128,13 +144,24 @@ def log(msg):
         log.write(msg_to_log)
 
 def main():
-    for i in range(10):
+    init_log();
+    for i in range(5):
+        envdir = './';
         w1 = Wongtron('w1', 2);
         w2 = Wongtron('w2', 2);
-        match = Match(w1, w2);
+        match = Match(w1, w2, envdir);
+
         match.run();
+
         results = match.match_results_string();
         log(results);
+
+        data_path = os.path.join(DATA_DIRECTORY, f'match-{match.endtime}');
+        while(pathlib.Path(data_path).is_dir()):
+            data_path += '-1';
+        pathlib.Path(data_path).mkdir();
+        shutil.copyfile(os.path.join(envdir, w1.logfilename()), os.path.join(data_path, w1.logfilename()));
+        shutil.copyfile(os.path.join(envdir, w2.logfilename()), os.path.join(data_path, w2.logfilename()));
 
 
 if __name__ == "__main__":
