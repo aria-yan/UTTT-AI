@@ -381,7 +381,7 @@ def is_global_block(boards, board):
     return False
 
 #winning lines based on player, if 0, board is dead
-def local_winning_lines(board, player):
+def local_winning_lines(board):
     global WINNING_LINES
     wonglines=0
     opplines=0
@@ -389,8 +389,7 @@ def local_winning_lines(board, player):
         wong, opp = count_cells_in_line(line, board)
         if wong == 0: opp += 1
         if opp == 0: wong += 1
-    if player == "wong": return wonglines
-    elif player == "opp": return opplines
+    return wonglines, opplines
 
 def global_winning_lines(boards, player):
     global WINNING_LINES
