@@ -596,11 +596,11 @@ def end_game_print(moves):
     for move in moves:
         boards = apply_move(boards, move);
     if wongtron_global_win(boards):
-        print(f"I win! Muahahahahaaaa");
+        log(f"I win! Muahahahahaaaa");
     elif opp_global_win(boards):
-        print(f"Opponent wins. ):");
+        log(f"Opponent wins. ):");
     elif global_tie(boards):
-        print(f"Its a draw.");
+        log(f"Its a draw.");
 
 def boards_string(boards):
     s = '';
